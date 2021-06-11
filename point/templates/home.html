@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<div class="row g-4">
+    <div class="col-12">
+      <div class="card border-dark">
+        <div class="card-body text-center">
+          <h5 class="card-title">칠판</h5>
+          <h6 class="card-subtitle mb-2 text-muted"></h6>
+          <p class="card-text"></p>
+        </div>
+      </div>
+    </div>
+
+{% for seat in seats %}
+<div class="col-2">
+    <div class="card border-dark">
+        <div class="card-body text-center">
+          <h5 class="card-title">{{ forloop.counter }}</h5>
+          <h6 class="card-subtitle mb-2 text-muted"></h6>
+          <p class="card-text"></p>
+          <a href="{% url 'auction' seat.id %}" class="stretched-link ">포인트 쓰기</a>
+        </div>
+      </div>
+</div>
+
+{% endfor %}
+</div>
+
+
+{% endblock %}
