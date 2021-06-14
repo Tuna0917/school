@@ -7,6 +7,7 @@ from .models import *
 from django.contrib import auth
 from django.contrib.auth.mixins import *
 from django.contrib.auth.decorators import permission_required
+from django.db.models import Sum
 # Create your views here.
 
 def home(request):
@@ -81,6 +82,12 @@ def auction(request, pk):
 
 class SeatDetailView(DetailView):
     model = Seat
+    # http://raccoonyy.github.io/django-annotate-and-aggregate-like-as-excel/
+    def get_context_data(self, **kwargs):
+        context=  super().get_context_data(**kwargs)
+        q = context['object'].seatlog_set.values('student').order_by('student').annotate(student=Student.objects.get(id=),total_point=Sum('points'))
+        return context
+
 
 class StudentListView(ListView):
     model = Student

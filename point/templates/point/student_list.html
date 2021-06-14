@@ -1,9 +1,9 @@
 {% extends 'base.html' %}
 
 {% block content %}
-
+<h5>학생 수 : {{ object_list.count }}</h5>
 {% for student in object_list %}
-    <a href="{{ student.get_absolute_url }}">{{ student }}</a>
+    <a href="{{ student.get_absolute_url }}">{{ student }}</a><br>
 {% empty %}
 empty
 {% endfor %}

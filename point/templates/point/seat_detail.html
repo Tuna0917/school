@@ -10,4 +10,12 @@
 <h5>입찰자 없음.</h5>
 {% endfor %}
 
+{% for q in query %}
+
+{{q}}
+
+{% empty %}
+아
+{% endfor %}
+
 {% endblock %}
