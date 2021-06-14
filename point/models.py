@@ -24,13 +24,20 @@ class Student(models.Model):
     def __str__(self):
         return self.name
 
+    def get_absolute_url(self):
+        return reverse('student_detail', args=[self.id])
+
 
 
 class Seat(models.Model):
-    pass
+    def __str__(self):
+        return f"좌석 (id: {self.id})"
 
 class SeatLog(models.Model):
     date = models.DateTimeField(auto_now_add=True) #언제
     student = models.ForeignKey(Student, on_delete=models.DO_NOTHING) #누가
     seat = models.ForeignKey(Seat, on_delete=models.CASCADE) #어떤 좌석을
     points = models.IntegerField(validators=[MinValueValidator(0),]) #얼마에
+
+    def __str__(self):
+        return f"{self.date.date()}에 {self.student}(이)가 {self.points} 포인트에 입찰함."

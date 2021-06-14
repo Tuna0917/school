@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<form action="{% url 'auction' pk %}" method="POST">{% csrf_token %}
+    <label for="point">얼마 :</label>
+    <input type="number" id="point" name="point" min="0" max="{{ student.point }}" value="0"><br>
+    <input type="submit">
+</form>
+
+
+{% endblock %}

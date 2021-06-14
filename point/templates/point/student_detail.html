@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+{{ object }}<br>
+
+{{ object.point }} 포인트
+{% if user.is_staff %}
+<a href="{% url 'student_update' object.id %}">update</a>
+{% endif %}
+{% endblock %}

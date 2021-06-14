@@ -5,6 +5,8 @@ from django.urls.base import reverse_lazy
 from django.views.generic import *
 from .models import *
 from django.contrib import auth
+from django.contrib.auth.mixins import *
+from django.contrib.auth.decorators import permission_required
 # Create your views here.
 
 def home(request):
@@ -36,9 +38,58 @@ def student_signup(request):
                 return render(request, 'rejectedsignup.html')
     return render(request, 'signup.html')
 
+def create_students(request):
+    if request.method == 'POST':
+        for i in range(request.method['number']):
+            username = f'student{i+1}'
+            user = User.objects.create_user(
+                username,
+                email = username+'@school.com',
+                password=123123,
+                first_name = 'None',
+                last_name = 'Student'
+            )
+            student = Student.objects.create(
+                    user = user,
+                    name = username,
+                )
+        return redirect('home')
+    return redirect('home')
+            
+
+
 
 def auction(request, pk):
-    print(request)
-    print(pk)
-    print(request.user)
-    return redirect('home')
+    seat = Seat.objects.get(id=pk)
+    if request.method == 'POST':
+        if int(request.POST['point']):
+            student = request.user.student
+            student.point -= int(request.POST['point'])
+            student.save()
+            SeatLog.objects.create(student=student, seat=seat,points=int(request.POST['point']))
+            return redirect('home')
+        else:
+            return redirect('home')
+        
+    context=dict()
+    context['pk']=pk
+    context['user']=request.user
+    context['student']=request.user.student
+    return render(request, 'auction.html', context=context)
+
+class SeatDetailView(DetailView):
+    model = Seat
+
+class StudentListView(ListView):
+    model = Student
+
+class StudentDetailView(DetailView):
+    model = Student
+
+
+class StudentUpdateView(UpdateView):
+    model = Student
+    fields = ['name', 'point', 'status', ]
+
+    def get_success_url(self):
+        return reverse('student_detail',kwargs={'pk': self.object.id })

@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h1>{{object}}</h1>
+<a href="{% url 'auction' object.id %}"><p>입찰하러 가기</p></a>
+{% for log in object.seatlog_set.all %}
+<h4>{{ log }}</h4>
+{% empty %}
+<h5>입찰자 없음.</h5>
+{% endfor %}
+
+{% endblock %}
