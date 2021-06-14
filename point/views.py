@@ -7,7 +7,7 @@ from .models import *
 from django.contrib import auth
 from django.contrib.auth.mixins import *
 from django.contrib.auth.decorators import permission_required
-from django.db.models import Sum
+from django.db.models import F, Sum, Count, Case, When
 # Create your views here.
 
 def home(request):
@@ -85,7 +85,10 @@ class SeatDetailView(DetailView):
     # http://raccoonyy.github.io/django-annotate-and-aggregate-like-as-excel/
     def get_context_data(self, **kwargs):
         context=  super().get_context_data(**kwargs)
-        q = context['object'].seatlog_set.values('student').order_by('student').annotate(student=Student.objects.get(id=),total_point=Sum('points'))
+        q = context['object'].seatlog_set.values('student').order_by('student').annotate(total_point=Sum('points'))
+        for x in q:
+            x['student'] = Student.objects.get(id=x['student'])
+        context['query'] = sorted(q, key=lambda x : -x['total_point'])
         return context
 
 
