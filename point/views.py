@@ -15,37 +15,39 @@ def home(request):
     return render(request, 'home.html', context=context)
 
 
-def student_signup(request):
-    if request.method == 'POST':
-        if request.POST['password1'] == request.POST['password2']:
-            try: 
-                user = User.objects.create_user(
-                    request.POST['username'], 
-                    email=request.POST['email'],
-                    password=request.POST['password1'],
-                    first_name=request.POST['first_name'],
-                    last_name=request.POST['last_name']
-                    )
+# def student_signup(request):
+#     if request.method == 'POST':
+#         if request.POST['password1'] == request.POST['password2']:
+#             try: 
+#                 user = User.objects.create_user(
+#                     request.POST['username'], 
+#                     email=request.POST['email'],
+#                     password=request.POST['password1'],
+#                     first_name=request.POST['first_name'],
+#                     last_name=request.POST['last_name']
+#                     )
                 
-                student = Student.objects.create(
-                    user = user,
-                    name = request.POST['last_name'] +' ' + request.POST['first_name'],
-                )
+#                 student = Student.objects.create(
+#                     user = user,
+#                     name = request.POST['last_name'] +' ' + request.POST['first_name'],
+#                 )
             
-                auth.login(request, user)
-                return redirect('home')
-            except:
-                return render(request, 'rejectedsignup.html')
-    return render(request, 'signup.html')
+#                 auth.login(request, user)
+#                 return redirect('home')
+#             except:
+#                 return render(request, 'rejectedsignup.html')
+#     return render(request, 'signup.html')
 
 def create_students(request):
     if request.method == 'POST':
-        for i in range(request.method['number']):
-            username = f'student{i+1}'
+        n = User.objects.count()
+        for i in range(int(request.POST['number'])):
+
+            username = f'student{i+n}'
             user = User.objects.create_user(
                 username,
                 email = username+'@school.com',
-                password=123123,
+                password='123123',
                 first_name = 'None',
                 last_name = 'Student'
             )
@@ -54,7 +56,7 @@ def create_students(request):
                     name = username,
                 )
         return redirect('home')
-    return redirect('home')
+    return render(request, 'create_students.html')
             
 
 

@@ -13,7 +13,7 @@ class Student(models.Model):
     )
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     name = models.CharField(max_length=32) #이름
-    point = models.IntegerField(default=0,validators=[MinValueValidator(0),])
+    point = models.IntegerField(default=100,validators=[MinValueValidator(0),])
     status = models.CharField(
         max_length=1,
         choices=STATUS,
