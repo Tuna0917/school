@@ -63,7 +63,7 @@ def create_students(request):
         return redirect('home')
     return render(request, 'create_students.html')
 
-
+#'str' object has no attribute 'get'라는 메세지가 나온다면 HttpResponse를 생각하기.
 def point_change(request, pk):
     if request.method == 'POST':
         point = int(request.POST['point'])

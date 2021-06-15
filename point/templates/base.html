@@ -64,11 +64,13 @@
                 <li class="nav-item dropdown mx-1">
                     {% if user.is_active %}
                     <a class="nav-link dropdown-toggle" href="" id="navbarScrollingDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                    <i class="fas fa-user"></i>&ensp;{{user.student}}&ensp;
+                    <i class="fas fa-user"></i>&ensp;{{user.student}}{% if user.is_staff %} Teacher {% endif %}&ensp;
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarScrollingDropdown">
-                        <li><a class="dropdown-item" href="">My point : {{user.student.point}}</a></li>
+                      {% if not user.is_staff %}
+                        <li><a class="dropdown-item" href="{% url user.student.get_absolute_url %}">My point : {{user.student.point}}</a></li>
                         <li><hr class="dropdown-divider"></li>
+                        {% endif %}
                         <li><a class="dropdown-item" href="{% url 'logout' %}">Logout</a></li>
                         <li><a class="dropdown-item" href="{% url 'password_change' %}">Change Password</a></li>
                     </ul>
@@ -91,13 +93,13 @@
             </div>
           </nav>
         
-          
+          {% if user.is_active %}
           <div class="container">
             
             {% block content %}{% endblock %}
               
           </div>
-          
+          {% endif %}
           {% block footer %}{% endblock %}
 
         
