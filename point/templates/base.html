@@ -42,7 +42,7 @@
                   <li class="nav-item">
                     <a class="nav-link active" href="{% url 'students' %}">Student List</a>
                   </li>
-                  {% endif %}
+                  
 
                   <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -54,8 +54,8 @@
                       <li><hr class="dropdown-divider"></li>
                       <li><a class="dropdown-item" href="">Archive</a></li>
                       <li><a class="dropdown-item" href="">Search</a></li>
-                    </ul>
-
+                    </ul> 
+                  {% endif %}
                   </li>
                 </ul>
                   
@@ -92,14 +92,15 @@
               </div>
             </div>
           </nav>
-        
-          {% if user.is_active %}
+          
+          
           <div class="container">
-            
+            {% block login %}{% endblock %}
+            {% if user.is_active %}
             {% block content %}{% endblock %}
-              
+               {% endif %}
           </div>
-          {% endif %}
+         
           {% block footer %}{% endblock %}
 
         
