@@ -33,15 +33,16 @@
                   <li class="nav-item">
                     <a class="nav-link active" aria-current="page" href="{% url 'home' %}">Home</a>
                   </li>
-
+                  {% if user.is_staff %}
                   <li class="nav-item">
                     <a class="nav-link active" href="{% url 'create' %}">Create Student</a>
                   </li>
-
+                  
+                  
                   <li class="nav-item">
                     <a class="nav-link active" href="{% url 'students' %}">Student List</a>
                   </li>
-
+                  {% endif %}
 
                   <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">

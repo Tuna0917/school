@@ -5,7 +5,25 @@
 {{ object }}<br>
 
 {{ object.point }} 포인트
-{% if user.is_staff %}
-<a href="{% url 'student_update' object.id %}">update</a>
+{% if user.is_staff %}<!--
+<a href="{% url 'student_update' object.id %}">update</a>-->
+<form method="POST" action="{% url 'point_change' object.id %}">{% csrf_token %}
+   <label for='point'>포인트 : </label>
+   <input type="number" id="point" name="point" value="0"><br>
+   <label for='reason'>이유 : </label>
+   <input type="text" id="reason" name="reason"><br>
+   <input type="submit">
+</form>
 {% endif %}
+
+{% for log in logs %}
+<p>
+    {{log.created_date}}<br>
+    포인트 증감량 : {{log.point}} <br>
+    이유 : {{log.reason}}  <br><br>
+</p>
+{% empty %}
+포인트 변동 내역이 없습니다.
+{% endfor %}
+
 {% endblock %}

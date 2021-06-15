@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect
 from django.urls import reverse
-from django.http import HttpResponse
+from django.http import HttpResponse,HttpResponseRedirect
 from django.urls.base import reverse_lazy
 from django.views.generic import *
 from .models import *
@@ -9,6 +9,10 @@ from django.contrib.auth.mixins import *
 from django.contrib.auth.decorators import permission_required
 from django.db.models import F, Sum, Count, Case, When
 # Create your views here.
+# concept = dict()
+# q = Concept.objects.all()
+# for conc in q:
+#     concept[conc.concept_id] = conc.concept_name
 
 def home(request):
     context = {}
@@ -58,7 +62,22 @@ def create_students(request):
                 )
         return redirect('home')
     return render(request, 'create_students.html')
-            
+
+
+def point_change(request, pk):
+    if request.method == 'POST':
+        point = int(request.POST['point'])
+        student = Student.objects.get(id=pk)
+        student.point += point
+        student.save()
+        log = Log.objects.create(
+            log_concept_id = 2,
+            log_student_id = pk,
+            point = point,
+            reason = request.POST['reason'],
+        )
+    return HttpResponseRedirect(student.get_absolute_url())
+
 
 
 
@@ -97,6 +116,11 @@ class StudentListView(ListView):
 
 class StudentDetailView(DetailView):
     model = Student
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['logs'] = Log.objects.filter(log_student_id = context['object'].id).all()
+        return context
 
 
 class StudentUpdateView(UpdateView):
