@@ -10,8 +10,11 @@
 
 {% endfor %}
 
+{% if object.status == 'a' %}
 <a href="{% url 'auction' object.id %}"><p>입찰하러 가기</p></a>
-
+{% else %}
+Unavailable
+{% endif %}
 
 
 {% endblock %}

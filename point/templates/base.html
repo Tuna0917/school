@@ -65,10 +65,10 @@
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarScrollingDropdown">
                       {% if not user.is_staff %}
-                        <li><a class="dropdown-item" href="{% url user.student.get_absolute_url %}">My point : {{user.student.point}}</a></li>
+                        <li><a class="dropdown-item" href="{{ user.student.get_absolute_url }}">My point : {{user.student.point}}</a></li>
                         {% endif %}
                         {% if user.is_staff %}
-                        <li><a class="dropdown-item"> </a></li>
+                        <li><a class="dropdown-item">선생님 전용 무언가</a></li> <!-- 뭐가 좋을까 -->
                         {% endif %}
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item" href="{% url 'logout' %}">Logout</a></li>

@@ -2,7 +2,7 @@
 
 {% block content %}
 
-<div class="row g-4">
+<div class="row justify-content-evenly g-4">
     <div class="col-12">
       <div class="card border-dark">
         <div class="card-body text-center">
@@ -14,16 +14,23 @@
     </div>
 
 {% for seat in seats %}
-<div class="col-2">
+
+{% if seat %}
+
+<div class="col-1">
     <div class="card border-dark">
         <div class="card-body text-center">
-          <h5 class="card-title">{{ forloop.counter }}</h5>
+          <h5 class="card-title">{{ seat.num }}</h5>
           <h6 class="card-subtitle mb-2 text-muted"></h6>
           <p class="card-text"></p>
           <a href="{% url 'seat' seat.id %}" class="stretched-link ">입찰</a>
         </div>
       </div>
 </div>
+
+{% else %}
+<div class="w-100"></div>
+{% endif %}
 
 {% endfor %}
 </div>

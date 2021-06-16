@@ -1,6 +1,8 @@
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.urls import reverse
+from django.shortcuts import redirect
+from django.shortcuts import resolve_url
 from django.contrib.auth.models import User
 # Create your models here.
 
@@ -25,7 +27,11 @@ class Student(models.Model):
         return self.name
 
     def get_absolute_url(self):
-        return reverse('student_detail', args=[self.id])
+        '''
+        template에서 get_absolute_url을 쓸 때는 제발 {%%}말고 {{}}
+        잊지말자...
+        '''
+        return resolve_url('student_detail', self.id)
 
 class Room(models.Model):
     STATUS = (
@@ -46,6 +52,7 @@ class Seat(models.Model):
         ('u', '불가능')
     )
     room = models.ForeignKey(Room, on_delete=models.CASCADE)
+    num = models.IntegerField()
     status = models.CharField(
         max_length=1,
         choices=STATUS,

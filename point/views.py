@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect
 from django.urls import reverse
 from django.http import HttpResponse,HttpResponseRedirect
+from django.shortcuts import get_object_or_404 # 'model' matching query does not exist.
 from django.urls.base import reverse_lazy
 from django.views.generic import *
 from .models import *
@@ -16,7 +17,20 @@ from django.db.models import F, Sum, Count, Case, When
 
 def home(request):
     context = {}
-    context['seats'] = Seat.objects.all()
+    try:
+        room = Room.objects.get(status='a')
+        seats = Seat.objects.filter(room=room)
+
+        for_context = []
+        for i, seat in enumerate(seats):
+            if i%(room.row) == 0:
+                for_context.append(False)
+            for_context.append(seat)
+
+        context['seats'] = for_context
+    except Exception as ex: #여기가 홈화면이 아니게하면 해결됨.
+        print(ex)
+        pass
     return render(request, 'home.html', context=context)
 
 # util에 추가
@@ -30,6 +44,7 @@ def create_room(request):
         )
         for i in range(number):
             seat = Seat.objects.create(
+                num= i+1,
                 room=room
             )
             concept = Concept.objects.create(
@@ -38,6 +53,10 @@ def create_room(request):
             )
         return redirect('home')
     return render(request, 'create_room.html')
+
+def close_room(request):
+    pass
+
 # util에 추가
 def create_students(request):
     if request.method == 'POST':
@@ -78,12 +97,17 @@ def point_change(request, pk):
 
 def auction(request, pk):
     seat = Seat.objects.get(id=pk)
+
     if request.method == 'POST':
-        if int(request.POST['point']):
-            if request.user.student:
+
+        if int(request.POST['point']): #0포인트 방지
+
+            if request.user.student: #선생님은 .student가 없으니까 여기서 막힘
+
                 student = request.user.student
                 student.point -= int(request.POST['point'])
                 student.save()
+
                 Log.objects.create(
                     log_concept_id=Concept.objects.filter(concept_name='seat',obj_id=pk),
                     log_student_id=pk, 
@@ -98,6 +122,7 @@ def auction(request, pk):
     context['user']=request.user
     context['student']=request.user.student
     return render(request, 'auction.html', context=context)
+
 
 class SeatDetailView(DetailView):
     model = Seat
@@ -124,7 +149,11 @@ class StudentDetailView(DetailView):
 
 class StudentUpdateView(UpdateView):
     model = Student
-    fields = ['name', 'point', 'status', ]
+    fields = ['name', 'status', ]
 
     def get_success_url(self):
         return reverse('student_detail',kwargs={'pk': self.object.id })
+
+
+def where_is_my_seat(student):
+    student.id

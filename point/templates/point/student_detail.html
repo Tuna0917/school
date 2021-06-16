@@ -2,7 +2,7 @@
 
 {% block content %}
 
-{{ object }}<br>
+<h2>{{ object }}</h2>
 
 {{ object.point }} 포인트
 {% if user.is_staff %}<!--
@@ -16,6 +16,8 @@
 </form>
 {% endif %}
 
+{% if user.is_staff or user.student == object %}
+
 {% for log in logs %}
 <p>
     {{log.created_date}}<br>
@@ -25,5 +27,7 @@
 {% empty %}
 포인트 변동 내역이 없습니다.
 {% endfor %}
+
+{% endif %}
 
 {% endblock %}
