@@ -8,16 +8,10 @@
 
 {{q.student}} :  <strong>{{q.total_point}}포인트</strong>에 입찰함<br>
 
-{% empty %}
-아
 {% endfor %}
 
 <a href="{% url 'auction' object.id %}"><p>입찰하러 가기</p></a>
-{% for log in object.seatlog_set.all %}
-<h4>{{ log }}</h4>
-{% empty %}
-<h5>입찰자 없음.</h5>
-{% endfor %}
+
 
 
 {% endblock %}

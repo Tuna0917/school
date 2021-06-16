@@ -21,15 +21,22 @@ def home(request):
 
 # util에 추가
 def create_room(request):
+    if Room.objects.filter(status='a'):
+        return redirect('home')
     if request.method == 'POST':
         number = int(request.POST['number'])
         room = Room.objects.create(
             row = request.POST['row']
         )
         for i in range(number):
-            Seat.objects.create(
+            seat = Seat.objects.create(
                 room=room
             )
+            concept = Concept.objects.create(
+                concept_name='seat',
+                obj_id=seat.id
+            )
+        return redirect('home')
     return render(request, 'create_room.html')
 # util에 추가
 def create_students(request):

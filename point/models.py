@@ -28,7 +28,17 @@ class Student(models.Model):
         return reverse('student_detail', args=[self.id])
 
 class Room(models.Model):
+    STATUS = (
+        ('a', '가능'),
+        ('u', '불가능')
+    )
     row = models.IntegerField()
+    status = models.CharField(
+        max_length=1,
+        choices=STATUS,
+        blank=True,
+        default='a'
+    )
 
 class Seat(models.Model):
     STATUS = (

@@ -34,10 +34,7 @@
                     <a class="nav-link active" aria-current="page" href="{% url 'home' %}">Home</a>
                   </li>
                   {% if user.is_staff %}
-                  <li class="nav-item">
-                    <a class="nav-link active" href="{% url 'create' %}">Create Student</a>
-                  </li>
-                  
+                 
                   
                   <li class="nav-item">
                     <a class="nav-link active" href="{% url 'students' %}">Student List</a>
@@ -52,8 +49,8 @@
                     <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
                       <li><a class="dropdown-item" href="{% url 'admin:index' %}">Admin</a></li>
                       <li><hr class="dropdown-divider"></li>
-                      <li><a class="dropdown-item" href="">Archive</a></li>
-                      <li><a class="dropdown-item" href="">Search</a></li>
+                      <li><a class="dropdown-item" href="{% url 'create_students' %}">Create Students</a></li>
+                      <li><a class="dropdown-item" href="{% url 'create_room' %}">Create Room</a></li>
                     </ul> 
                   {% endif %}
                   </li>
@@ -69,8 +66,11 @@
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarScrollingDropdown">
                       {% if not user.is_staff %}
                         <li><a class="dropdown-item" href="{% url user.student.get_absolute_url %}">My point : {{user.student.point}}</a></li>
-                        <li><hr class="dropdown-divider"></li>
                         {% endif %}
+                        {% if user.is_staff %}
+                        <li><a class="dropdown-item"> </a></li>
+                        {% endif %}
+                        <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item" href="{% url 'logout' %}">Logout</a></li>
                         <li><a class="dropdown-item" href="{% url 'password_change' %}">Change Password</a></li>
                     </ul>
