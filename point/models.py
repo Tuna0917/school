@@ -31,25 +31,24 @@ class Room(models.Model):
     row = models.IntegerField()
 
 class Seat(models.Model):
-    
+    STATUS = (
+        ('a', '가능'),
+        ('u', '불가능')
+    )
+    room = models.ForeignKey(Room, on_delete=models.CASCADE)
+    status = models.CharField(
+        max_length=1,
+        choices=STATUS,
+        blank=True,
+        default='a'
+    )
     def __str__(self):
         return f"좌석 (id: {self.id})"
-
-#폐기할 예정
-class SeatLog(models.Model):
-    date = models.DateTimeField(auto_now_add=True) #언제
-    student = models.ForeignKey(Student, on_delete=models.DO_NOTHING) #누가
-    seat = models.ForeignKey(Seat, on_delete=models.CASCADE) #어떤 좌석을
-    points = models.IntegerField(validators=[MinValueValidator(0),]) #얼마에
-
-    def __str__(self):
-        return f"{self.date.date()}에 {self.student}(이)가 {self.points} 포인트에 입찰함."
-
 
 class Log(models.Model):
     created_date = models.DateTimeField(auto_now_add=True)
     modified_date = models.DateTimeField(auto_now=True)
-    log_concept_id = models.IntegerField()
+    log_concept_id = models.IntegerField(default=0) #0이면 선생님이 직접 올리고 내린거.
     log_student_id = models.IntegerField()
     point = models.IntegerField()
     reason = models.TextField(blank=True)
@@ -58,6 +57,7 @@ class Log(models.Model):
 class Concept(models.Model):
     concept_id = models.IntegerField(primary_key=True)
     concept_name = models.CharField(max_length = 32)
+    obj_id = models.IntegerField()
 
     def __str__(self) -> str:
-        return f'{self.concept_name} (concept_id = {self.concept_id})'
+        return f'{self.concept_name}'

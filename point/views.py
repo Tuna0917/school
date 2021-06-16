@@ -19,30 +19,19 @@ def home(request):
     context['seats'] = Seat.objects.all()
     return render(request, 'home.html', context=context)
 
-
-# def student_signup(request):
-#     if request.method == 'POST':
-#         if request.POST['password1'] == request.POST['password2']:
-#             try: 
-#                 user = User.objects.create_user(
-#                     request.POST['username'], 
-#                     email=request.POST['email'],
-#                     password=request.POST['password1'],
-#                     first_name=request.POST['first_name'],
-#                     last_name=request.POST['last_name']
-#                     )
-                
-#                 student = Student.objects.create(
-#                     user = user,
-#                     name = request.POST['last_name'] +' ' + request.POST['first_name'],
-#                 )
-            
-#                 auth.login(request, user)
-#                 return redirect('home')
-#             except:
-#                 return render(request, 'rejectedsignup.html')
-#     return render(request, 'signup.html')
-
+# util에 추가
+def create_room(request):
+    if request.method == 'POST':
+        number = int(request.POST['number'])
+        room = Room.objects.create(
+            row = request.POST['row']
+        )
+        for i in range(number):
+            Seat.objects.create(
+                room=room
+            )
+    return render(request, 'create_room.html')
+# util에 추가
 def create_students(request):
     if request.method == 'POST':
         n = User.objects.count()
@@ -71,7 +60,6 @@ def point_change(request, pk):
         student.point += point
         student.save()
         log = Log.objects.create(
-            log_concept_id = 2,
             log_student_id = pk,
             point = point,
             reason = request.POST['reason'],
@@ -85,13 +73,18 @@ def auction(request, pk):
     seat = Seat.objects.get(id=pk)
     if request.method == 'POST':
         if int(request.POST['point']):
-            student = request.user.student
-            student.point -= int(request.POST['point'])
-            student.save()
-            SeatLog.objects.create(student=student, seat=seat,points=int(request.POST['point']))
-            return redirect('home')
-        else:
-            return redirect('home')
+            if request.user.student:
+                student = request.user.student
+                student.point -= int(request.POST['point'])
+                student.save()
+                Log.objects.create(
+                    log_concept_id=Concept.objects.filter(concept_name='seat',obj_id=pk),
+                    log_student_id=pk, 
+                    seat=seat,
+                    points=int(request.POST['point'])
+                    )
+
+        return redirect('home')
         
     context=dict()
     context['pk']=pk
@@ -104,10 +97,9 @@ class SeatDetailView(DetailView):
     # http://raccoonyy.github.io/django-annotate-and-aggregate-like-as-excel/
     def get_context_data(self, **kwargs):
         context=  super().get_context_data(**kwargs)
-        q = context['object'].seatlog_set.values('student').order_by('student').annotate(total_point=Sum('points'))
-        for x in q:
-            x['student'] = Student.objects.get(id=x['student'])
-        context['query'] = sorted(q, key=lambda x : -x['total_point'])
+        seat = context['object']
+        concept = Concept.objects.get(concept_name__icontains='seat',obj_id=seat.id)
+        context['logs'] = Log.objects.filter(log_concept_id=concept.concept_id).all()
         return context
 
 
