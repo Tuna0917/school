@@ -31,9 +31,12 @@
 {% if user.is_staff %} <!-- 선생님이라면 -->
 {% for log in logs %}
 <p>
+    {% if log.activated %}
     {{log.created_date}}<br>
     학생 번호 : {{log.log_student_id}}
     포인트 : {{log.point}} <br><br>
+    a href="{% url 'auction_cancel' log.id %}">취소하기.</a>
+    {% endif %}
 </p>
 {% endfor %}
 

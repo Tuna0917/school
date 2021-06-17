@@ -21,11 +21,14 @@ extra_home.html
 
 {% if seat %}
 
-<div class="col-auto">
+<div class="col-1">
   
   <div class="card border-dark">
-
+        {% if user.student == seat.student %}
+        <div class="card-body bg-secondary text-center">
+        {% else %}
         <div class="card-body text-center">
+        {% endif %}
           <h5 class="card-title">{{ seat.seat_num }}</h5>
           <h6 class="card-subtitle mb-2 text-muted"></h6>
           <p class="card-text">{{ seat.student.name }}</p>

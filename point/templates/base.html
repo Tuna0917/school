@@ -3,7 +3,8 @@
     <head>
         <meta charset="utf-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="viewport" content="width=1280">
+        
 
         <title>{% block title %}School-Point{% endblock %}</title>
 
@@ -94,7 +95,7 @@
           </nav>
           
           
-          <div class="container">
+          <div class="container" style="min-width: 1280px;">
             {% block login %}{% endblock %}
             {% if user.is_active %}
             {% block content %}{% endblock %}

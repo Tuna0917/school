@@ -61,7 +61,10 @@ class Seat(models.Model):
     )
     owner = models.IntegerField(null=True)
     def __str__(self):
-        return f"좌석 (id: {self.id})"
+        row = self.room.row
+        fst = 1+ self.num//row 
+        snd = self.num%row
+        return f"{self.num}번 자리 ({fst}번째 줄 창가로부터 {snd}번째)"
 
 class Log(models.Model):
     created_date = models.DateTimeField(auto_now_add=True)
