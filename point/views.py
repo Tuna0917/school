@@ -35,7 +35,6 @@ def home(request):
                     for_context.append(seat)
 
                 context['seats'] = for_context
-                print(context)
                 return render(request, 'extra_home.html', context=context)
             else:
                 seats = Seat.objects.filter(room=room)
@@ -56,7 +55,6 @@ def home(request):
 
     except Exception as ex: #여기가 홈화면이 아니게하면 해결됨.
         print(ex)
-        pass
     return render(request, 'home.html', context=context)
 
 def extra_home():
