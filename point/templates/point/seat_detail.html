@@ -3,18 +3,51 @@
 {% block content %}
 
 <h1>{{object}}</h1>
+{% if not user.is_staff %} 
+    {% if not log.activated %}
+        {% if object.status == 'a' %}
 
-{% for q in query %}
+        <form method="POST" action="{% url 'auction' object.id %}">
+            {% csrf_token %}
+            <label for="point">얼마 :</label>
+            {% if user.student.point >= 0 %}
+                <input type="number" id="point" name="point" min="0"  max="{{ user.student.point }}" value="0">
+            {% else %}
+                <input type="number" id="point" name="point" min="0"  max="0" value="0">
+            {% endif %}
+            <input type="submit">
+            </form>
 
-{{q.student}} :  <strong>{{q.total_point}}포인트</strong>에 입찰함<br>
 
+        {% else %}
+
+            닫힘
+
+        {% endif %}
+    {% endif %}
+
+{% endif %}
+
+{% if user.is_staff %} <!-- 선생님이라면 -->
+{% for log in logs %}
+<p>
+    {{log.created_date}}<br>
+    학생 번호 : {{log.log_student_id}}
+    포인트 : {{log.point}} <br><br>
+</p>
 {% endfor %}
 
-{% if object.status == 'a' %}
-<a href="{% url 'auction' object.id %}"><p>입찰하러 가기</p></a>
-{% else %}
-Unavailable
+{% else %} <!--외부인 or 학생 그치만 외부인은 content블록 안쪽을 못 보니 사실상 학생만.-->
+
+{% if log.activated %}
+    {{ log.created_date }}<br> {{ log.point }} 포인트로 입찰함. <a href="">취소하기.</a>
 {% endif %}
+
+{% endif %}
+
+
+
+
 
 
 {% endblock %}

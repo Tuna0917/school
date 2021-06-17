@@ -7,7 +7,8 @@
 {{ object.point }} 포인트
 {% if user.is_staff %}<!--
 <a href="{% url 'student_update' object.id %}">update</a>-->
-<form method="POST" action="{% url 'point_change' object.id %}">{% csrf_token %}
+<form method="POST" action="{% url 'point_change' object.id %}">
+    {% csrf_token %}
    <label for='point'>포인트 : </label>
    <input type="number" id="point" name="point" value="0"><br>
    <label for='reason'>이유 : </label>

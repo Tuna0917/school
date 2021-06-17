@@ -102,26 +102,34 @@ def auction(request, pk):
 
         if int(request.POST['point']): #0포인트 방지
 
-            if request.user.student: #선생님은 .student가 없으니까 여기서 막힘
-
+            if not request.user.is_staff: #선생님은 안돼요...
+                           
                 student = request.user.student
+                concept_id=Concept.objects.get(concept_name='seat',obj_id=pk).concept_id
+
+                if Log.objects.filter(log_concept_id=concept_id, activated=True):
+                    #이미 좌석을 가진게 있음.
+                    return redirect('home')
+
                 student.point -= int(request.POST['point'])
                 student.save()
 
                 Log.objects.create(
-                    log_concept_id=Concept.objects.filter(concept_name='seat',obj_id=pk),
-                    log_student_id=pk, 
-                    seat=seat,
-                    points=int(request.POST['point'])
+                    log_concept_id=concept_id,
+                    log_student_id=student.id, 
+                    point=int(request.POST['point']),
+                    reason='좌석 예약'
                     )
 
-        return redirect('home')
-        
-    context=dict()
-    context['pk']=pk
-    context['user']=request.user
-    context['student']=request.user.student
-    return render(request, 'auction.html', context=context)
+    return redirect('home')
+
+
+def cancel(request, pk):
+    log = Log.objects.get(id=pk)
+    if request.user.is_staff or (request.user.student.id == log.log_student_id): #선생님이거나, log의 주인이랑 요청한 사람이랑 같으면.
+        pass
+    
+    return redirect('home')
 
 
 class SeatDetailView(DetailView):
@@ -131,7 +139,13 @@ class SeatDetailView(DetailView):
         context=  super().get_context_data(**kwargs)
         seat = context['object']
         concept = Concept.objects.get(concept_name__icontains='seat',obj_id=seat.id)
-        context['logs'] = Log.objects.filter(log_concept_id=concept.concept_id).all()
+        if self.request.user.is_staff:
+            context['logs'] = Log.objects.filter(log_concept_id=concept.concept_id).all()
+        else:
+            student = self.request.user.student
+            
+            if Log.objects.filter(log_concept_id=concept.concept_id, log_student_id=student.id,activated=True):
+                context['log'] = Log.objects.get(log_concept_id=concept.concept_id, log_student_id=student.id,activated=True)
         return context
 
 
@@ -155,5 +169,3 @@ class StudentUpdateView(UpdateView):
         return reverse('student_detail',kwargs={'pk': self.object.id })
 
 
-def where_is_my_seat(student):
-    student.id
