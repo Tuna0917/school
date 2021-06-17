@@ -28,7 +28,7 @@ class Student(models.Model):
 
     def get_absolute_url(self):
         '''
-        template에서 get_absolute_url을 쓸 때는 제발 {%%}말고 {{}}
+        template에서 get_absolute_url을 쓸 때는 제발 {%%}말고 {{}} 쓰기
         잊지말자...
         '''
         return resolve_url('student_detail', self.id)
@@ -67,10 +67,14 @@ class Log(models.Model):
     created_date = models.DateTimeField(auto_now_add=True)
     modified_date = models.DateTimeField(auto_now=True)
     log_concept_id = models.IntegerField(default=0) #0이면 선생님이 직접 올리고 내린거.
+    log_concept_name = models.CharField(max_length = 32, default='teacher')
     log_student_id = models.IntegerField()
     point = models.IntegerField()  
     activated = models.BooleanField(default=True)
     reason = models.TextField(blank=True)
+    
+    class Meta:
+        ordering = ['-modified_date']
 
 
 class Concept(models.Model): #이름이 직관성 바닥인데. 뭐로 바꾸지?

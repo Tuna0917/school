@@ -4,7 +4,9 @@
 
 <h2>{{ object }}</h2>
 
-{{ object.point }} 포인트
+보유 포인트: {{ object.point }} 
+<br>
+<br>
 {% if user.is_staff %}<!--
 <a href="{% url 'student_update' object.id %}">update</a>-->
 <form method="POST" action="{% url 'point_change' object.id %}">
@@ -22,7 +24,7 @@
 {% for log in logs %}
 <p>
     {{log.created_date}}<br>
-    포인트 변화 : {{log.point}} <br>
+    포인트 변화 :  {% if log.log_concept_id > 0 %}-{% else %}{% endif %}{{log.point}} <br>
     이유 : {{log.reason}}  <br><br>
 </p>
 {% empty %}
