@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+
+
+<h1>{{object}}</h1>
+<br><br>
+
+{% for log in logs %}
+
+    {{ log.created_date }}<br>
+    {% if log.log_concept_name == 'seat' %}
+    {{ log.log_student_id }}번 학생이 {{ log.point }} 포인트로 입찰함.
+    {% endif %}
+    {% if log.log_concept_name == 'cancel' %}
+    {{ log.log_student_id }}번 학생이 입찰 취소함
+    {% endif %}
+    <br>
+    <br>
+{% empty %}
+랜덤 배정 결과
+
+{% endfor %}
+
+
+
+
+{% endblock %}

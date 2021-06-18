@@ -26,3 +26,6 @@ def fix_seat(student:Student, seat:Seat):
 
     print('done')
     return False
+
+def extra_home():
+    room = list(Room.objects.order_by('-id').all())[0]

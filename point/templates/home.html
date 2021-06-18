@@ -2,7 +2,7 @@
 
 {% block content %}
 
-<div class="row d-flex flex-wrap g-2">
+<div class="row justify-content-evenly g-2">
     <div class="col-12">
       <div class="card border-dark">
         <div class="card-body text-center">
@@ -17,7 +17,7 @@
 
 {% if seat %}
 
-<div class="col-auto mb-1 mx-1 flex-fill" style="min-width: 128px;">
+<div class="col-1">
   {% if seat.id == my_seat.id %}
     <div class="card text-white bg-secondary border-dark">
   {% else %}

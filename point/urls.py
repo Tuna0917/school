@@ -9,6 +9,7 @@ urlpatterns = [
     path('auction/<int:pk>', auction, name='auction'),
     path('auction/<int:pk>/cancel', auction_cancel, name='auction_cancel'),
     path('seat/<int:pk>', SeatDetailView.as_view(), name='seat'),
+    path('seat/<int:pk>/finished', FinshedSeatDetailView.as_view(), name='seat_end'),
     path('students/', StudentListView.as_view(), name='students'),
     path('student/<int:pk>', StudentDetailView.as_view(), name='student_detail'),
     path('student/<int:pk>/update/', StudentUpdateView.as_view(), name='student_update'),

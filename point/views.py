@@ -57,8 +57,6 @@ def home(request):
         print(ex)
     return render(request, 'home.html', context=context)
 
-def extra_home():
-    room = list(Room.objects.order_by('-id').all())[0]
 
 class RoomDetailView(DetailView):
     model = Room
@@ -101,6 +99,7 @@ def create_room(request):
         return redirect('home')
     return render(request, 'create_room.html')
 
+
 def close_room(request):
     if not request.user.is_staff:
         return redirect('home')
@@ -113,14 +112,14 @@ def close_room(request):
             if Log.objects.filter(log_concept_id=concept_id,activated=True).order_by('-point', 'created_date').all(): #해당 좌석에 입찰한 애들이 있다면
                 for log in Log.objects.filter(log_concept_id=concept_id,activated=True).order_by('-point', 'created_date').all():
                     student = Student.objects.get(id=log.log_student_id)
+                    log.activated = False
+                    log.save()
                     if fix_seat(student=student,seat=seat): 
                         #입찰 실패한 나머지들은...
                         student.point += log.point
                         student.save()
-                        log.activated = False
-                        log.save()
                         Log.objects.create(
-                        log_concept_id = -log.log_concept_id,
+                        log_concept_id = log.log_concept_id,
                         log_student_id = student.id,
                         log_concept_name='refund', 
                         point = log.point,
@@ -144,7 +143,8 @@ def close_room(request):
         
         room.status = 'u'
         room.save()
-        return redirect('home')
+    return redirect('home')
+
 
 
 
@@ -214,12 +214,12 @@ def auction(request, pk):
                     log_student_id=student.id, 
                     log_concept_name='seat',
                     point= int(request.POST['point']),
-                    reason='좌석 예약'
+                    reason=f'{seat.num}번 좌석 예약'
                     )
 
     return redirect('home')
 
-
+##################  log_concept_id = -log.log_concept_id, 를 그냥 +로 바꿈
 def auction_cancel(request, pk):
     log = Log.objects.get(id=pk)
     if request.user.is_staff or (request.user.student.id == log.log_student_id): #선생님이거나, log의 주인이랑 요청한 사람이랑 같으면.
@@ -229,7 +229,7 @@ def auction_cancel(request, pk):
         log.activated = False
         log.save()
         Log.objects.create(
-                    log_concept_id = -log.log_concept_id,
+                    log_concept_id = log.log_concept_id,
                     log_student_id = student.id,
                     log_concept_name='cancel', 
                     point = log.point,
@@ -244,17 +244,28 @@ class SeatDetailView(DetailView):
     def get_context_data(self, **kwargs):
         context=  super().get_context_data(**kwargs)
         seat = context['object']
-        concept = Concept.objects.get(concept_name__icontains='seat',obj_id=seat.id)
+        concept = Concept.objects.get(concept_name='seat',obj_id=seat.id)
         if self.request.user.is_staff:
             context['logs'] = Log.objects.filter(log_concept_id=concept.concept_id).all()
         else:
             student = self.request.user.student
             context['seat'] = find_seat(student)
-            if Log.objects.filter(log_concept_name='seat', log_student_id=student.id,activated=True):
+            if Log.objects.filter(log_concept_id=concept.concept_id, log_concept_name='seat', log_student_id=student.id,activated=True):
                 context['log'] = Log.objects.get(log_concept_name='seat', log_student_id=student.id,activated=True)
                 
         return context
 
+class FinshedSeatDetailView(DetailView):
+    model = Seat
+    template_name = 'end_seat_detail.html'
+    # http://raccoonyy.github.io/django-annotate-and-aggregate-like-as-excel/
+    def get_context_data(self, **kwargs):
+        context=  super().get_context_data(**kwargs)
+        seat = context['object']
+        concept = Concept.objects.get(concept_name='seat',obj_id=seat.id)
+        context['logs'] = Log.objects.filter(log_concept_id=concept.concept_id).order_by('id').all()
+        print(context['logs'])
+        return context
 
 class StudentListView(ListView):
     model = Student
