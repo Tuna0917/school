@@ -52,6 +52,7 @@
                       <li><hr class="dropdown-divider"></li>
                       <li><a class="dropdown-item" href="{% url 'create_students' %}">Create Students</a></li>
                       <li><a class="dropdown-item" href="{% url 'create_room' %}">Create Room</a></li>
+                      <li><a class="dropdown-item" href="{% url 'close_room' %}">Close Room</a></li>
                     </ul> 
                   {% endif %}
                   </li>
@@ -67,11 +68,10 @@
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarScrollingDropdown">
                       {% if not user.is_staff %}
                         <li><a class="dropdown-item" href="{{ user.student.get_absolute_url }}">My point : {{user.student.point}}</a></li>
-                        {% endif %}
-                        {% if user.is_staff %}
-                        <li><a class="dropdown-item">선생님 전용 무언가</a></li> <!-- 뭐가 좋을까 -->
-                        {% endif %}
                         <li><hr class="dropdown-divider"></li>
+                        {% endif %}
+                        
+                        
                         <li><a class="dropdown-item" href="{% url 'logout' %}">Logout</a></li>
                         <li><a class="dropdown-item" href="{% url 'password_change' %}">Change Password</a></li>
                     </ul>
@@ -96,7 +96,7 @@
           <div class="container">
           {% block login %}{% endblock %}
         </div>
-          <div class="container" style="min-width: 1030px;">
+          <div class="container" style="min-width: 1180px;">
             
             {% if user.is_active %}
             {% block home %}{% endblock %}

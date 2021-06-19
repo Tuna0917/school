@@ -11,7 +11,7 @@
             <form method="POST" action="{% url 'auction' object.id %}">
                 {% csrf_token %}
                 <label for="point">포인트 :</label>
-                    <input type="number" id="point" name="point" min="1"  max="{{ user.student.point }}" value="1">
+                    <input type="number" id="point" name="point" min="1"  max="{{ user.student.point }}">
                 <input type="submit" value="입찰">
                 </form>
             {% endif %}

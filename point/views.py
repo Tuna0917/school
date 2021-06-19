@@ -33,6 +33,7 @@ def home(request):
                 if i%(room.row) == 0:
                     for_context.append(False)
                 for_context.append(seat)
+            for_context.extend(['empty']*(room.row-seats.count()%room.row))
 
             context['seats'] = for_context
             return render(request, 'extra_home.html', context=context)
@@ -45,8 +46,9 @@ def home(request):
                     for_context.append(False)
                 for_context.append(seat)
 
-            context['seats'] = for_context
+            for_context.extend(['empty']*(room.row-seats.count()%room.row))
 
+            context['seats'] = for_context
             if request.user.is_active:
                 if not request.user.is_staff:
                     student = request.user.student
@@ -268,7 +270,7 @@ class StudentDetailView(DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['logs'] = Log.objects.filter(log_student_id = context['object'].id).all()
+        context['logs'] = Log.objects.filter(log_student_id = context['object'].id).order_by('-id').all()
         return context
 
 

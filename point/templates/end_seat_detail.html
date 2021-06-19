@@ -17,6 +17,8 @@
       </thead>
       <tbody>
 {% for log in logs %}
+
+{% if log.log_name != 'refund' %}
 <tr>
     <th scope="row">{{ forloop.counter }}</th>
     <td>{{ log.created_date }}</td>
@@ -28,6 +30,7 @@
     <td>입찰 취소함</td>
     {% endif %}
 </tr>
+{% endif %}
 
 {% empty %}
 <tr>

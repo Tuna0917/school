@@ -6,7 +6,6 @@ def find_seat(student:Student):
     if log:
         log = log.get()
         seat_id = Concept.objects.get(concept_id=log.log_concept_id).obj_id
-        print(seat_id)
         return Seat.objects.get(id=seat_id)
     else:
         return None
@@ -17,6 +16,7 @@ def fix_seat(student:Student, seat:Seat):
     room = seat.room
     SeatResult.objects.create(
         room_id = room.id,
+        seat_id = seat.id,
         seat_num = seat.num,
         student_id = student.id
     )

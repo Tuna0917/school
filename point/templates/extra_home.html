@@ -21,7 +21,11 @@ extra_home.html
 
 {% if seat %}
 
-<div class="col-auto">
+{% if seat == 'empty' %}
+<div class="col-1" style="min-width: 132px;"></div>
+  {% else %}
+
+<div class="col-1" style="min-width: 132px;">
   <!--결과창 - 이유도 추가.-->
   <div class="card border-dark">
         {% if user.student == seat.student %}
@@ -32,11 +36,11 @@ extra_home.html
           <h5 class="card-title">{{ seat.seat_num }}</h5>
           <h6 class="card-subtitle mb-2 text-muted"></h6>
           <p class="card-text">{{ seat.student.name }}</p>
-          <a href="{% url 'seat_end' seat.id %}" class="stretched-link "></a>
+          <a href="{% url 'seat_end' seat.seat_id %}" class="stretched-link "></a>
         </div>
       </div>
 </div>
-
+{% endif %}
 {% else %}
 <div class="w-100"></div>
 {% endif %}

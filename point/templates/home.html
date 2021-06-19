@@ -17,22 +17,28 @@
 
 {% if seat %}
 
-<div class="col-1">
-  {% if seat.id == my_seat.id %}
-    <div class="card text-white bg-secondary border-dark">
+  {% if seat == 'empty' %}
+  <div class="col-1"></div>
   {% else %}
-  <div class="card border-dark">
-  {% endif %}
-        <div class="card-body text-center">
-          <h5 class="card-title">{% if seat.num < 10 %}&ensp;{% endif %}{{ seat.num }}</h5>
-          <h6 class="card-subtitle mb-2 text-muted"></h6>
-          <p class="card-text"></p>
-          {% if seat.status == 'a' %}
-          <a href="{% url 'seat' seat.id %}" class="stretched-link "></a>
-          {% endif %}
+
+  
+  <div class="col-1">
+    {% if seat.id == my_seat.id %}
+      <div class="card text-white bg-secondary border-dark">
+    {% else %}
+      <div class="card border-dark">
+    {% endif %}
+          <div class="card-body text-center">
+            <h5 class="card-title">{% if seat.num < 10 %}&ensp;{% endif %}{{ seat.num }}</h5>
+            <h6 class="card-subtitle mb-2 text-muted"></h6>
+            <p class="card-text"></p>
+            {% if seat.status == 'a' %}
+              <a href="{% url 'seat' seat.id %}" class="stretched-link "></a>
+            {% endif %}
+          </div>
         </div>
-      </div>
-</div>
+  </div>
+  {% endif %}
 
 {% else %}
 <div class="w-100"></div>
