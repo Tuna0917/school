@@ -29,7 +29,7 @@
       <div class="card border-dark">
     {% endif %}
           <div class="card-body text-center">
-            <h5 class="card-title">{% if seat.num < 10 %}&ensp;{% endif %}{{ seat.num }}</h5>
+            <h5 class="card-title">{% if seat.num < 10 %}&nbsp;{% endif %}{{ seat.num }}{% if seat.num < 10 %}&nbsp;{% endif %}</h5>
             <h6 class="card-subtitle mb-2 text-muted"></h6>
             <p class="card-text"></p>
             {% if seat.status == 'a' %}

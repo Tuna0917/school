@@ -243,18 +243,18 @@ class SeatDetailView(DetailView):
         concept = Concept.objects.get(concept_name='seat',obj_id=seat.id)
         if self.request.user.is_staff:
             context['logs'] = Log.objects.filter(log_concept_id=concept.concept_id).order_by('id').all()
+
         else:
             student = self.request.user.student
             context['seat'] = find_seat(student)
-            if Log.objects.filter(log_name='seat', log_student_id=student.id,activated=True):
-                context['log'] = Log.objects.get(log_name='seat', log_student_id=student.id,activated=True)
+            if Log.objects.filter(log_concept_id=concept.concept_id, log_name='seat', log_student_id=student.id,activated=True):
+                context['log'] = Log.objects.get(log_concept_id=concept.concept_id, log_name='seat', log_student_id=student.id,activated=True)
                 
         return context
 
 class FinshedSeatDetailView(DetailView):
     model = Seat
     template_name = 'end_seat_detail.html'
-    # http://raccoonyy.github.io/django-annotate-and-aggregate-like-as-excel/
     def get_context_data(self, **kwargs):
         context=  super().get_context_data(**kwargs)
         seat = context['object']
