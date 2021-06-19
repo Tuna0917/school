@@ -7,8 +7,8 @@
 보유 포인트: {{ object.point }} 
 <br>
 <br>
-{% if user.is_staff %}<!--
-<a href="{% url 'student_update' object.id %}">update</a>-->
+<!--
+{% if user.is_staff %}
 <form method="POST" action="{% url 'point_change' object.id %}">
     {% csrf_token %}
    <label for='point'>포인트 : </label>
@@ -18,19 +18,58 @@
    <input type="submit">
 </form>
 {% endif %}
-
+-->
 {% if user.is_staff or user.student == object %}
-
+<table class="table table-hover">
+    <thead>
+        <tr>
+            <th scope="col">#</th>
+            <th scope="col">Date</th>
+            <th scope="col">Point</th>
+            <th scope="col">Reason</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if user.is_staff %}
+        <form method="POST" action="{% url 'point_change' object.id %}">
+            {% csrf_token %}
+        <tr>
+            <th scope="row">P</th>
+            <td>Now</td>
+            <td><input class="form-control" type="number" id="point" name="point" value="0"></td>
+            <td><!--<input type="text" id="reason" name="reason"><input type="submit">-->
+                <div class="input-group mb-3">
+                    <input type="text" id="reason" name="reason" class="form-control"aria-describedby="button-addon2">
+                    <button class="btn btn-outline-secondary" type="submit" id="button-addon2">Submit</button>
+                  </div>
+            </td>
+        </tr>
+    </form>
+    {% endif %}
 {% for log in logs %}
-<p>
-    {{log.created_date}}<br>
-    포인트 변화 :  {% if log.log_concept_name == 'seat' %}-{% endif %}{{log.point}} <br>
-    이유 : {{log.reason}}  <br><br>
-</p>
+
+<tr>
+    <th scope="row">{{ forloop.counter }}</th>
+    <td>{{ log.created_date }}</td>
+    {% if log.log_name == 'teacher' %}
+        {% if log.point >= 0 %}
+            <td class="table-info">{{ log.point }}</td>
+        {% else %}
+            <td class="table-danger">{{ log.point }}</td>    
+        {% endif %}
+    {% else %}
+        {% if log.log_name == 'cancel' or log.log_name == 'refund' %}
+            <td class="table-info">{{ log.point }}</td>
+        {% else %}
+            <td class="table-danger">-{{ log.point }}</td>
+        {% endif %}
+    {% endif %}
+    <td>{{log.reason}}</td>
+</tr>
 {% empty %}
 포인트 변동 내역이 없습니다.
 {% endfor %}
-
+</tbody>
 {% endif %}
 
 {% endblock %}

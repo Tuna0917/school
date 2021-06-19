@@ -4,9 +4,6 @@
 
 <form method="POST" action="{% url 'create_room' %}">{% csrf_token %}
     <label for="row">책상 줄 수 :</label>
-    <input type="number" id="row" name="row" min="1" max="12" value="1"><br>
-    <label for="number">책상 수 :</label>
-    <input type="number" id="number" name="number" min="0" value="0"><br>
-    <input type="submit">
+    <input type="number" id="row" name="row" min="1" max="12" value="1"><input type="submit">
 </form>
 {% endblock %}

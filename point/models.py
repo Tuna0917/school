@@ -53,7 +53,7 @@ class Seat(models.Model):
     )
     room = models.ForeignKey(Room, on_delete=models.CASCADE)
     num = models.IntegerField()
-    status = models.CharField(
+    status = models.CharField( 
         max_length=1,
         choices=STATUS,
         blank=True,
@@ -61,16 +61,14 @@ class Seat(models.Model):
     )
     owner = models.IntegerField(null=True)
     def __str__(self):
-        row = self.room.row
-        fst = 1+ self.num//row 
-        snd = self.num%row
-        return f"{self.num}번 자리 ({fst}번째 줄 창가로부터 {snd}번째)"
+        
+        return f"{self.num}번 자리"
 
 class Log(models.Model):
     created_date = models.DateTimeField(auto_now_add=True)
     modified_date = models.DateTimeField(auto_now=True)
     log_concept_id = models.IntegerField(default=0) #0이면 선생님이 직접 올리고 내린거.
-    log_concept_name = models.CharField(max_length = 32, default='teacher')
+    log_name = models.CharField(max_length = 32, default='teacher')
     log_student_id = models.IntegerField()
     point = models.IntegerField()  
     activated = models.BooleanField(default=True)
@@ -78,6 +76,9 @@ class Log(models.Model):
     
     class Meta:
         ordering = ['-modified_date']
+    
+    def get_student_url(self):
+        return resolve_url('student_detail', self.log_student_id)
 
 
 class Concept(models.Model): #이름이 직관성 바닥인데. 뭐로 바꾸지?
@@ -93,4 +94,5 @@ class SeatResult(models.Model):
     created_date = models.DateTimeField(auto_now_add=True)
     room_id = models.IntegerField()
     seat_num = models.IntegerField()
+    seat_id = models.IntegerField()
     student_id = models.IntegerField()

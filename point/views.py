@@ -19,52 +19,24 @@ from django.db.models import F, Sum, Count, Case, When
 
 def home(request):
     context = {}
-    try:
-        if Room.objects.order_by('-id').all():
-            room = list(Room.objects.order_by('-id').all())[0]
-            if room.status == 'u':
-                seats = SeatResult.objects.filter(room_id=room.id).order_by('seat_num').values()
 
-                for dic in seats:
-                    dic['student'] = Student.objects.filter(id=dic['student_id']).get()
+    if Room.objects.all():
+        room = list(Room.objects.order_by('-id').all())[0]
+        if room.status == 'u':
+            seats = SeatResult.objects.filter(room_id=room.id).order_by('seat_num').values()
 
-                for_context = []
-                for i, seat in enumerate(seats):
-                    if i%(room.row) == 0:
-                        for_context.append(False)
-                    for_context.append(seat)
+            for dic in seats:
+                dic['student'] = Student.objects.filter(id=dic['student_id']).get()
 
-                context['seats'] = for_context
-                return render(request, 'extra_home.html', context=context)
-            else:
-                seats = Seat.objects.filter(room=room)
+            for_context = []
+            for i, seat in enumerate(seats):
+                if i%(room.row) == 0:
+                    for_context.append(False)
+                for_context.append(seat)
 
-                for_context = []
-                for i, seat in enumerate(seats):
-                    if i%(room.row) == 0:
-                        for_context.append(False)
-                    for_context.append(seat)
-
-                context['seats'] = for_context
-
-                if request.user.is_active:
-                    if not request.user.is_staff:
-                        student = request.user.student
-                        context['my_seat']=find_seat(student)
-            
-
-    except Exception as ex: #여기가 홈화면이 아니게하면 해결됨.
-        print(ex)
-    return render(request, 'home.html', context=context)
-
-
-class RoomDetailView(DetailView):
-    model = Room
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        room = context['object']
-        if room.status == 'a':
+            context['seats'] = for_context
+            return render(request, 'extra_home.html', context=context)
+        else:
             seats = Seat.objects.filter(room=room)
 
             for_context = []
@@ -75,15 +47,30 @@ class RoomDetailView(DetailView):
 
             context['seats'] = for_context
 
-        return context
+            if request.user.is_active:
+                if not request.user.is_staff:
+                    student = request.user.student
+                    context['my_seat']=find_seat(student)
+    else:
+        if request.user.is_staff:
+            return redirect('create_room')
+        
+
+
+    return render(request, 'home.html', context=context)
 
 
 # util에 추가
 def create_room(request):
+    if not request.user.is_staff:
+        return redirect('home')
+    if not Student.objects.all(): #학생이 없다면.
+        return redirect('create_students')
+
     if Room.objects.filter(status='a'):
         return redirect('home')
     if request.method == 'POST':
-        number = int(request.POST['number'])
+        number = Student.objects.count()
         room = Room.objects.create(
             row = request.POST['row']
         )
@@ -101,16 +88,17 @@ def create_room(request):
 
 
 def close_room(request):
-    if not request.user.is_staff:
+    if not request.user.is_staff: #선생님이 아니면 안됨
         return redirect('home')
-    if Room.objects.filter(status='a'):
-        room = Room.objects.get(status='a')
-        seats = Seat.objects.filter(room=room)
+ 
+    if Room.objects.filter(status='a'): #룸이 열려있어야함.
+        room = Room.objects.get(status='a') #이론상 하나밖에 없음.
+        seats = Seat.objects.filter(room=room) #그 룸의 좌석들을 가져옴.
 
         for seat in seats: #좌석마다 
             concept_id  = Concept.objects.get(concept_name='seat',obj_id=seat.id).concept_id #좌석의 concept_id 가져오기
-            if Log.objects.filter(log_concept_id=concept_id,activated=True).order_by('-point', 'created_date').all(): #해당 좌석에 입찰한 애들이 있다면
-                for log in Log.objects.filter(log_concept_id=concept_id,activated=True).order_by('-point', 'created_date').all():
+            if Log.objects.filter(log_concept_id=concept_id,log_name='seat',activated=True).order_by('-point', 'created_date').all(): #해당 좌석에 입찰한 애들이 있다면
+                for log in Log.objects.filter(log_concept_id=concept_id,log_name='seat',activated=True).order_by('-point', 'created_date').all():
                     student = Student.objects.get(id=log.log_student_id)
                     log.activated = False
                     log.save()
@@ -121,9 +109,9 @@ def close_room(request):
                         Log.objects.create(
                         log_concept_id = log.log_concept_id,
                         log_student_id = student.id,
-                        log_concept_name='refund', 
+                        log_name='refund', 
                         point = log.point,
-                        reason='환불'
+                        reason='입찰에 실패함'
                         )
         
         '''
@@ -154,8 +142,12 @@ def close_room(request):
 
 # util에 추가
 def create_students(request):
+    if not request.user.is_staff:
+        return redirect('home')
+    if Room.objects.filter(status='a'): #자리배치시즌페이즈일때는 새로운 학생을 추가할 수 없게.
+        return redirect('home')
     if request.method == 'POST':
-        n = User.objects.count()
+        n = max(User.objects.count(),1)
         for i in range(int(request.POST['number'])):
 
             username = f'student{i+n}'
@@ -212,7 +204,7 @@ def auction(request, pk):
                 Log.objects.create(
                     log_concept_id=concept_id,
                     log_student_id=student.id, 
-                    log_concept_name='seat',
+                    log_name='seat',
                     point= int(request.POST['point']),
                     reason=f'{seat.num}번 좌석 예약'
                     )
@@ -222,6 +214,8 @@ def auction(request, pk):
 ##################  log_concept_id = -log.log_concept_id, 를 그냥 +로 바꿈
 def auction_cancel(request, pk):
     log = Log.objects.get(id=pk)
+    if log.log_name != 'seat':
+        return redirect('home')
     if request.user.is_staff or (request.user.student.id == log.log_student_id): #선생님이거나, log의 주인이랑 요청한 사람이랑 같으면.
         student = Student.objects.get(id=log.log_student_id)
         student.point += log.point
@@ -231,7 +225,7 @@ def auction_cancel(request, pk):
         Log.objects.create(
                     log_concept_id = log.log_concept_id,
                     log_student_id = student.id,
-                    log_concept_name='cancel', 
+                    log_name='cancel', 
                     point = log.point,
                     reason='취소'
                     )
@@ -246,12 +240,12 @@ class SeatDetailView(DetailView):
         seat = context['object']
         concept = Concept.objects.get(concept_name='seat',obj_id=seat.id)
         if self.request.user.is_staff:
-            context['logs'] = Log.objects.filter(log_concept_id=concept.concept_id).all()
+            context['logs'] = Log.objects.filter(log_concept_id=concept.concept_id).order_by('id').all()
         else:
             student = self.request.user.student
             context['seat'] = find_seat(student)
-            if Log.objects.filter(log_concept_id=concept.concept_id, log_concept_name='seat', log_student_id=student.id,activated=True):
-                context['log'] = Log.objects.get(log_concept_name='seat', log_student_id=student.id,activated=True)
+            if Log.objects.filter(log_name='seat', log_student_id=student.id,activated=True):
+                context['log'] = Log.objects.get(log_name='seat', log_student_id=student.id,activated=True)
                 
         return context
 
@@ -264,7 +258,6 @@ class FinshedSeatDetailView(DetailView):
         seat = context['object']
         concept = Concept.objects.get(concept_name='seat',obj_id=seat.id)
         context['logs'] = Log.objects.filter(log_concept_id=concept.concept_id).order_by('id').all()
-        print(context['logs'])
         return context
 
 class StudentListView(ListView):

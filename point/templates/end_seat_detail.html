@@ -6,23 +6,39 @@
 
 <h1>{{object}}</h1>
 <br><br>
-
+<table class="table table-striped table-bordered">
+    <thead>
+        <tr>
+            <th scope="col">#</th>
+            <th scope="col">Date</th>
+            <th scope="col">Student number</th>
+            <th scope="col">Detail</th>
+        </tr>
+      </thead>
+      <tbody>
 {% for log in logs %}
+<tr>
+    <th scope="row">{{ forloop.counter }}</th>
+    <td>{{ log.created_date }}</td>
+    <td>{{ log.log_student_id }}</td>
+    {% if log.log_name == 'seat' %}
+    <td>{{ log.point }}포인트로 입찰함.</td>
+    {% endif %}
+    {% if log.log_name == 'cancel' %}
+    <td>입찰 취소함</td>
+    {% endif %}
+</tr>
 
-    {{ log.created_date }}<br>
-    {% if log.log_concept_name == 'seat' %}
-    {{ log.log_student_id }}번 학생이 {{ log.point }} 포인트로 입찰함.
-    {% endif %}
-    {% if log.log_concept_name == 'cancel' %}
-    {{ log.log_student_id }}번 학생이 입찰 취소함
-    {% endif %}
-    <br>
-    <br>
 {% empty %}
-랜덤 배정 결과
-
+<tr>
+    <th scope="row"> - </th>
+    <td>-</td>
+    <td>-</td>
+    <td>-</td>
+</tr>
 {% endfor %}
-
+</tbody>
+</table>
 
 
 

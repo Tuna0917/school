@@ -3,21 +3,18 @@
 {% block content %}
 
 <h1>{{object}}</h1>
+<br>
 {% if not user.is_staff %} 
-    {% if not log %}
+    {% if not seat %}
         {% if object.status == 'a' %}
-
-        <form method="POST" action="{% url 'auction' object.id %}">
-            {% csrf_token %}
-            <label for="point">얼마 :</label>
-            {% if user.student.point >= 0 %}
-                <input type="number" id="point" name="point" min="0"  max="{{ user.student.point }}" value="0">
-            {% else %}
-                <input type="number" id="point" name="point" min="0"  max="0" value="0">
+            {% if user.student.point > 0 %}
+            <form method="POST" action="{% url 'auction' object.id %}">
+                {% csrf_token %}
+                <label for="point">포인트 :</label>
+                    <input type="number" id="point" name="point" min="1"  max="{{ user.student.point }}" value="1">
+                <input type="submit" value="입찰">
+                </form>
             {% endif %}
-            <input type="submit">
-            </form>
-
 
         {% else %}
 
@@ -28,26 +25,62 @@
 
 {% endif %}
 
+<table class="table {% if user.is_staff %}table-hover{% endif %}">
+    <thead>
+        <tr>
+            <th scope="col">#</th>
+            <th scope="col">Date</th>
+            <th scope="col">Student number</th>
+            <th scope="col">Detail</th>
+            <th scope="col">Action</th>
+        </tr>
+      </thead>
+      <tbody>
 {% if user.is_staff %} <!-- 선생님이라면 -->
-{% for log in logs %}
-<p>
-    {% if log.activated %}
-    {{log.created_date}}<br>
-    학생 번호 : {{log.log_student_id}}
-    포인트 : {{log.point}} <br><br>
-    a href="{% url 'auction_cancel' log.id %}">취소하기.</a>
-    {% endif %}
-</p>
-{% endfor %}
+
+
+    {% for log in logs %}
+        {% if log.activated %}
+         <tr>
+        {% else %}
+        <tr style="text-decoration:line-through">
+        {% endif %}
+            <th scope="row">{{ forloop.counter }}</th>
+            <td>{{ log.created_date }}</td>
+            <td style = "cursor:pointer;" onclick='location.href="{{log.get_student_url}}"'><a >{{ log.log_student_id }}</a></td>
+            {% if log.log_name == 'seat' %}
+            <td>{{ log.point }}포인트로 입찰함.</td>
+            {% endif %}
+            {% if log.log_name == 'cancel' %}
+            <td>입찰 취소함</td>
+            {% endif %}
+            
+                {% if log.activated and log.log_name == 'seat' %}
+                <td class="table-danger"><a href="{% url 'auction_cancel' log.id %}">취소하기.</a></td>
+                {% else %}
+                <td></td>
+                {% endif %}
+            
+        </tr>
+
+    {% endfor %}
+
 
 {% else %} <!--외부인 or 학생 그치만 외부인은 content블록 안쪽을 못 보니 사실상 학생만.-->
 
-{% if log %}
-    {{ log.created_date }}<br> {{seat.num}}번 좌석을  {{ log.point }} 포인트로 입찰함. <a href="{% url 'auction_cancel' log.id %}">취소하기.</a>
-{% endif %}
+    {% if log %}
+        <tr>
+            <th scope="row">{{ seat.num }}번 자리</th>
+            <td>{{ log.created_date }}</td>
+            <td>{{ log.log_student_id }}</td>
+            <td>{{ log.point }}포인트로 입찰함.</td>
+            <td class="table-danger">{% if log.activated %}<a href="{% url 'auction_cancel' log.id %}">취소하기.</a>{% endif %}</td>
+        </tr>
+
+    {% endif %}
 
 {% endif %}
-
+</tbody>
 
 
 
