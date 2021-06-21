@@ -2,7 +2,7 @@ from django.db import models
 from django.db.models.fields.related import ForeignKey
 from django.shortcuts import resolve_url
 from django.contrib.auth.models import User
-
+import uuid
 # Create your models here.
 class Student(models.Model):
     created_date = models.DateField(auto_now_add=True)
@@ -34,6 +34,7 @@ class Student(models.Model):
         return resolve_url('student_detail', self.id)
 
 class Log(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     STATUS = (
         ('u', '사용'),
         ('c', '취소'),

@@ -117,6 +117,24 @@ def auction(request, pk):
 
     return redirect('home')
 
-def auction(request, pk):
+def cancel(request, pk):
     log = Log.object.get(id=pk)
+    if request.user.is_staff or request.user.student == log.log_student:
+        if log.status == 'u':
+
+            log.status = 'c'
+            log.cancled = True
+            log.save()
+
+            student = log.log_student
+            student.point += log.point
+            student.save()
+
+            Log.objects.create(
+                obj_name='log',
+                log_student = student,
+                cancel_log = log,
+                point = log.point,
+            )
+    "{% url 'blah blah' %}?next={{ request.path }}"
 
