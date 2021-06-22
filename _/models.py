@@ -5,8 +5,8 @@ from django.contrib.auth.models import User
 import uuid
 # Create your models here.
 class Student(models.Model):
-    created_date = models.DateField(auto_now_add=True)
-    modified_date = models.DateField(auto_now=True)
+    created_date = models.DateTimeField(auto_now_add=True)
+    modified_date = models.DateTimeField(auto_now=True)
     STATUS = (
         ('a', '재학'), #Attending
         ('b', '휴학'), #Break
@@ -48,11 +48,11 @@ class Log(models.Model):
         default='t'
     )
     obj_name = models.CharField(max_length=32)
-    obj_id = models.IntegerField()
+    obj_id = models.IntegerField(null=True)
     log_student = models.ForeignKey(Student, on_delete=models.CASCADE)
     point = models.IntegerField()  
-    canceled = models.BooleanField(default=True, null=True) #'u'의 경우
-    cancle_log = models.ForeignKey('self', on_delete=models.CASCADE, null=True) # 'c'의 경우
+    canceled = models.BooleanField(default=False) #'u'의 경우 이게 T로 바뀔 수 있음.
+    cancel_log = models.ForeignKey('self', on_delete=models.CASCADE, null=True) # 'c'의 경우
     reason = models.TextField(blank=True)
     
     class Meta:
@@ -63,8 +63,8 @@ class Log(models.Model):
 
 
 class Room(models.Model):
-    created_date = models.DateField(auto_now_add=True)
-    modified_date = models.DateField(auto_now=True)
+    created_date = models.DateTimeField(auto_now_add=True)
+    modified_date = models.DateTimeField(auto_now=True)
     STATUS = (
         ('a', '가능'),
         ('u', '불가능')
@@ -80,8 +80,8 @@ class Room(models.Model):
     )
 
 class Seat(models.Model):
-    created_date = models.DateField(auto_now_add=True)
-    modified_date = models.DateField(auto_now=True)
+    created_date = models.DateTimeField(auto_now_add=True)
+    modified_date = models.DateTimeField(auto_now=True)
     STATUS = (
         ('a', '가능'),
         ('u', '불가능')
@@ -94,21 +94,21 @@ class Seat(models.Model):
         blank=True,
         default='a'
     )
-    owner = log_student = models.ForeignKey(Student, on_delete=models.SET_NULL, null=True)
+    owner = models.ForeignKey(Student, on_delete=models.SET_NULL, null=True)
     def __str__(self):
         
         return f"{self.num}번 자리"
 
 
 class Preset(models.Model):
-    created_date = models.DateField(auto_now_add=True)
-    modified_date = models.DateField(auto_now=True)
-    name = models.CharField()
+    created_date = models.DateTimeField(auto_now_add=True)
+    modified_date = models.DateTimeField(auto_now=True)
+    name = models.CharField(max_length=32)
     point = models.IntegerField()
 
 class Charge(models.Model):
-    created_date = models.DateField(auto_now_add=True)
-    modified_date = models.DateField(auto_now=True)
+    created_date = models.DateTimeField(auto_now_add=True)
+    modified_date = models.DateTimeField(auto_now=True)
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
     reason = models.TextField()
     submit = models.BooleanField(default=False)

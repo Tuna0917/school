@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+
+
+<h1>{{object}}</h1>
+<br><br>
+<table class="table table-striped table-bordered">
+    <thead>
+        <tr>
+            <th scope="col">#</th>
+            <th scope="col">Date</th>
+            <th scope="col">Student number</th>
+            <th scope="col">Detail</th>
+        </tr>
+      </thead>
+      <tbody>
+{% for log in logs %}
+
+{% if log.log_name != 'refund' %}
+<tr>
+    <th scope="row">{{ forloop.counter }}</th>
+    <td>{{ log.created_date }}</td>
+    <td>{{ log.log_student_id }}</td>
+    {% if log.log_name == 'seat' %}
+    <td>{{ log.point }}포인트로 입찰함.</td>
+    {% endif %}
+    {% if log.log_name == 'cancel' %}
+    <td>입찰 취소함</td>
+    {% endif %}
+</tr>
+{% endif %}
+
+{% empty %}
+<tr>
+    <th scope="row"> - </th>
+    <td>-</td>
+    <td>-</td>
+    <td>-</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+
+
+
+{% endblock %}

@@ -1,8 +1,8 @@
-from typing import List
 from django.shortcuts import render, redirect
 from django.urls import reverse
 from .models import *
 from django.views.generic import *
+from django.http import HttpResponseRedirect
 # Create your views here.
 password = 123123
 
@@ -17,6 +17,7 @@ class StudentDetailView(DetailView):
         context = super().get_context_data(**kwargs)
         context['logs'] = Log.objects.filter(log_student = context['object']).all()
         context['charges'] = Charge.objects.filter(student = context['object']).all()
+        context['presets'] = Preset.objects.all()
         return context
 
 class StudentUpdateView(UpdateView):
@@ -28,7 +29,6 @@ class StudentUpdateView(UpdateView):
 
 class ChargeListView(ListView):
     modle = Charge
-
 
 
 
@@ -49,6 +49,9 @@ class RoomDetailView(DetailView): #사실상 SeatListView죠?
 class RoomCreateView(CreateView):
     model = Room
     fields = ['notice', 'row', 'minimum',]
+
+    def form_valid(self, form):
+        return super().form_valid(form)
 
 class RoomUpdateView(UpdateView):
     model = Room
@@ -76,11 +79,16 @@ class PresetDeleteView(DeleteView):
 
 
 
-
-
-
 def home(request):
     return render(request,'home.html')
+
+def create_room(request):
+    if not Room.objects.filter(status='a'):
+        
+        if request.user.is_staff:
+            pass
+
+    return redirect('room_detail', pk=Room.objects.get(status='a').id)
 
 def close_room(request, pk):
     room = Room.objects.get(id=pk)
@@ -112,10 +120,43 @@ def auction(request, pk):
     seat = Seat.objects.get(id=pk)
 
     if request.method == 'POST':
-        pass
+        
+        #room의 조건을 위배했는가?
+        
+        
+        post = request.POST
 
 
-    return redirect('home')
+
+        student = request.user.student
+        student.point -= post['point']
+        student.save()
+
+        log = Log.objects.create(
+            status = 'u',
+            obj_name = 'seat',
+            obj_id = pk,
+            point = post['point'],
+        )
+
+def point_change(request, pk):
+    student = Student.objects.get(id=pk)
+    if request.user.is_staff and request.method=='POST':
+        post = request.POST
+
+        student.point += post['point']
+        student.save()
+
+        log = Log.objects.create(
+            status = 't',
+            obj_name = post.get('name', 'teacher'),
+            obj_id = int(post.get('id', '0')),
+            log_student = student,
+            reason = post.get('reason', '')
+        )
+
+    return HttpResponseRedirect(student.get_absolute_url())
+
 
 def cancel(request, pk):
     log = Log.object.get(id=pk)
@@ -123,7 +164,7 @@ def cancel(request, pk):
         if log.status == 'u':
 
             log.status = 'c'
-            log.cancled = True
+            log.canceled = True
             log.save()
 
             student = log.log_student
@@ -136,5 +177,5 @@ def cancel(request, pk):
                 cancel_log = log,
                 point = log.point,
             )
-    "{% url 'blah blah' %}?next={{ request.path }}"
+    "{% url 'cancle' log.uuid %}?next={{ request.path }}"
 
