@@ -40,6 +40,11 @@
                                 <li class="nav-item">
                                     <a class="nav-link active" aria-current="page" href="{% url 'room_now' %}">Home</a>
                                 </li>
+                            {% if user.student %}
+                                <li class="nav-item">
+                                    <a class="nav-link active" href="{{ user.student.get_absolute_url }}">프로필 및 포인트 내역 보러 가기</a>
+                                </li>
+                            {% endif %}
                                 {% if user.is_staff %}
 
 
@@ -75,9 +80,7 @@
 
                             </ul>
                             {% endif %}
-                                <li class="nav-item">
-                                    <a class="nav-link active" href="{{ user.student.get_absolute_url }}">프로필 및 포인트 내역 보러 가기</a>
-                                </li>
+
 
                             <div class="navbar-nav">
                                 <li class="nav-item dropdown mx-1">
