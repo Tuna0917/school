@@ -33,8 +33,6 @@ class StudentUpdateView(UpdateView):
         # Check permissions for the request.user here
         if request.user.is_staff:
             self.fields = ['name','status']
-        elif self.get_object() != request.user.student:
-            return HttpResponseNotFound('<h1>Page not found</h1>')
         return super().dispatch(request, *args, **kwargs)
 
 class ChargeListView(ListView):

@@ -3,7 +3,7 @@
 {% block content %}
 <form method="POST" action="{% url 'create_room' %}">{% csrf_token %}
     <label for="num"><h1>좌석 수:</h1></label>
-    <input type="number" id="num" name="num" min="0" value="0">(한번 설정하면 수정할 수 없습니다.)<br><br>
+    <input type="number" id="num" name="num" min="0" value="0">(한번 설정하면 다음 자리배치까지는 수정할 수 없습니다.)<br><br>
     <label for="row">줄 수:</label>
     <input type="number" id="row" name="row" min="0" value="0"><br><br>
     <label for="minimum">최소 입찰 좌석 수:</label>
