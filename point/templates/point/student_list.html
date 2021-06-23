@@ -1,11 +1,30 @@
-{% extends 'base.html' %}
+{% extends 'school.html' %}
 
-{% block content %}
-<h5>학생 수 : {{ object_list.count }}</h5>
-{% for student in object_list %}
-    <a href="{{ student.get_absolute_url }}">{{ student }}</a><br>
-{% empty %}
-empty
+
+{% block teacher %}
+<h1>Student List</h1>
+<br>
+
+
+{% for object in object_list %}
+
+    <h3><a href="{{ object.get_absolute_url }}">{{ object }}</a></h3>
+    <p>상태 : {{ object.get_status_display }}</p>
+
 {% endfor %}
+<br>
 
+<div>
+    <span>
+        {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}">Previous</a>
+        {% endif %}
+
+        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+
+        {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}">Next</a>
+        {% endif %}
+    </span>
+</div>
 {% endblock %}

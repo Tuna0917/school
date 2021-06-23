@@ -1,0 +1,15 @@
+{% extends 'school.html' %}
+
+{% block teacher %}
+
+{% for object in object_list %}
+
+
+{% if object.1 < room.minimum %}말안듣는놈{% endif %}
+
+<a href="{{object.0.get_absolute_url}}">{{ object.0 }}</a> : {{ object.1 }} <br>
+
+{% endfor %}
+
+<a href="{% url 'close_room' %}">진행하기</a>
+{% endblock %}

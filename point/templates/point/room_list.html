@@ -1,0 +1,17 @@
+{% extends 'school.html' %}
+
+
+{% block teacher %}
+<h1>Room List</h1>
+<br>
+
+
+{% for object in object_list %}
+
+    <h3><a href="{{ object.get_absolute_url }}">Id : {{ object.id }}</a></h3>
+    생성일: {{ object.created_date|date:"N d, Y" }}
+    <p>상태 : {% if object.status == 'a' %}진행 중...{% else %}완료{% endif %}</p>
+
+{% endfor %}
+
+{% endblock %}

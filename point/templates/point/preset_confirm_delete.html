@@ -1,0 +1,15 @@
+{% extends 'school.html' %}
+
+{% block title %}preset_confirm_delete.html{% endblock %}
+
+{% block teacher %}
+
+    <h1>Are you sure?</h1>
+    <br>
+
+    <form action="" method="POST">{% csrf_token %}
+        <p>Are you sure you want to delete "{{ object.name }}"</p>
+        <input type="submit" value="Confirm" class="btn btn-danger btn-sm"/>
+    </form>
+    
+{% endblock %}

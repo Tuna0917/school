@@ -1,12 +1,12 @@
 from django.db import models
-from django.core.validators import MinValueValidator, MaxValueValidator
-from django.urls import reverse
-from django.shortcuts import redirect
+from django.db.models.fields.related import ForeignKey
 from django.shortcuts import resolve_url
 from django.contrib.auth.models import User
+import uuid
 # Create your models here.
-
 class Student(models.Model):
+    created_date = models.DateTimeField(auto_now_add=True)
+    modified_date = models.DateTimeField(auto_now=True)
     STATUS = (
         ('a', '재학'), #Attending
         ('b', '휴학'), #Break
@@ -15,7 +15,7 @@ class Student(models.Model):
     )
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     name = models.CharField(max_length=32) #이름
-    point = models.IntegerField(default=100,validators=[MinValueValidator(0),])
+    point = models.IntegerField(default=100,)
     status = models.CharField(
         max_length=1,
         choices=STATUS,
@@ -27,26 +27,62 @@ class Student(models.Model):
         return self.name
 
     def get_absolute_url(self):
+        
+        return resolve_url('student_detail', self.id)
         '''
         template에서 get_absolute_url을 쓸 때는 제발 {%%}말고 {{}} 쓰기
         잊지말자...
         '''
-        return resolve_url('student_detail', self.id)
+class Log(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    STATUS = (
+        ('u', '사용'),
+        ('c', '취소'),
+        ('t', '선생님')
+    )
+    created_date = models.DateTimeField(auto_now_add=True)
+    modified_date = models.DateTimeField(auto_now=True)
+    status = models.CharField( 
+        max_length=1,
+        choices=STATUS,
+        default='t'
+    )
+    obj_name = models.CharField(max_length=32)
+    obj_id = models.IntegerField(null=True)
+    log_student = models.ForeignKey(Student, on_delete=models.CASCADE)
+    point = models.IntegerField()  
+    canceled = models.BooleanField(default=False) #'u'의 경우 이게 T로 바뀔 수 있음.
+    cancel_log = models.ForeignKey('self', on_delete=models.CASCADE, null=True) # 'c'의 경우
+    reason = models.TextField(blank=True)
+    
+    class Meta:
+        ordering = ['created_date']
+    
+
 
 class Room(models.Model):
+    created_date = models.DateTimeField(auto_now_add=True)
+    modified_date = models.DateTimeField(auto_now=True)
     STATUS = (
         ('a', '가능'),
         ('u', '불가능')
     )
+    notice = models.TextField(blank=True)
     row = models.IntegerField()
+    minimum = models.IntegerField(null=True)
     status = models.CharField(
         max_length=1,
         choices=STATUS,
         blank=True,
         default='a'
     )
+    def get_absolute_url(self):
+        return resolve_url('room_detail', self.id)
+
 
 class Seat(models.Model):
+    created_date = models.DateTimeField(auto_now_add=True)
+    modified_date = models.DateTimeField(auto_now=True)
     STATUS = (
         ('a', '가능'),
         ('u', '불가능')
@@ -59,40 +95,25 @@ class Seat(models.Model):
         blank=True,
         default='a'
     )
-    owner = models.IntegerField(null=True)
+    owner = models.ForeignKey(Student, on_delete=models.SET_NULL, null=True)
+    
     def __str__(self):
-        
         return f"{self.num}번 자리"
 
-class Log(models.Model):
+    def get_absolute_url(self):
+        return resolve_url('seat_detail', self.id)
+
+
+class Preset(models.Model):
     created_date = models.DateTimeField(auto_now_add=True)
     modified_date = models.DateTimeField(auto_now=True)
-    log_concept_id = models.IntegerField(default=0) #0이면 선생님이 직접 올리고 내린거.
-    log_name = models.CharField(max_length = 32, default='teacher')
-    log_student_id = models.IntegerField()
-    point = models.IntegerField()  
-    activated = models.BooleanField(default=True)
-    reason = models.TextField(blank=True)
-    
-    class Meta:
-        ordering = ['-modified_date']
-    
-    def get_student_url(self):
-        return resolve_url('student_detail', self.log_student_id)
+    name = models.CharField(max_length=32)
+    point = models.IntegerField()
 
 
-class Concept(models.Model): #이름이 직관성 바닥인데. 뭐로 바꾸지?
-    concept_id = models.IntegerField(primary_key=True)
-    concept_name = models.CharField(max_length = 32) #obj의 모델 명이랑 같게.
-    obj_id = models.IntegerField() #obj의 pk
-    #concept_name이랑 obj_id는 같으면서 concept_id가 다른 애는 생길 수 없음.
-
-    def __str__(self) -> str:
-        return f'{self.concept_name}'
-
-class SeatResult(models.Model):
+class Charge(models.Model):
     created_date = models.DateTimeField(auto_now_add=True)
-    room_id = models.IntegerField()
-    seat_num = models.IntegerField()
-    seat_id = models.IntegerField()
-    student_id = models.IntegerField()
+    modified_date = models.DateTimeField(auto_now=True)
+    student = models.ForeignKey(Student, on_delete=models.CASCADE)
+    reason = models.TextField()
+    submit = models.BooleanField(default=False)

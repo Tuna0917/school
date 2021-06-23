@@ -1,0 +1,29 @@
+{% extends 'school.html' %}
+
+{% block teacher %}
+<h1>프리셋 목록</h1>
+<a href="{% url 'preset_create' %}?next={{ request.path }}">Create New One</a>
+<table class="table">
+    <thead>
+      <tr>
+        <th scope="col">id</th>
+        <th scope="col">이름</th>
+        <th scope="col">포인트</th>
+        <th scope="col">Update</th>
+        <th scope="col">Delete</th>
+      </tr>
+    </thead>
+    <tbody>
+        {% for preset in object_list %}
+        <tr>
+            <th scope="row">{{ preset.id }}</th>
+            <td>{{ preset.name }}</td>
+            <td>{{ preset.point }}</td>
+            <td><a href="{% url 'preset_update' preset.id %}">Update</a></td>
+            <td><a href="{% url 'preset_delete' preset.id %}">Delete</a></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+  </table>
+
+{% endblock %}

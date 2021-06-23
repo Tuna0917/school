@@ -1,75 +1,80 @@
 {% extends 'base.html' %}
 
 {% block content %}
-
-<h2>{{ object }}</h2>
-
-보유 포인트: {{ object.point }} 
-<br>
-<br>
-<!--
-{% if user.is_staff %}
-<form method="POST" action="{% url 'point_change' object.id %}">
-    {% csrf_token %}
-   <label for='point'>포인트 : </label>
-   <input type="number" id="point" name="point" value="0"><br>
-   <label for='reason'>이유 : </label>
-   <input type="text" id="reason" name="reason"><br>
-   <input type="submit">
-</form>
-{% endif %}
--->
-{% if user.is_staff or user.student == object %}
-<table class="table table-hover">
-    <thead>
-        <tr>
-            <th scope="col">#</th>
-            <th scope="col">Date</th>
-            <th scope="col">Point</th>
-            <th scope="col">Reason</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% if user.is_staff %}
-        <form method="POST" action="{% url 'point_change' object.id %}">
-            {% csrf_token %}
-        <tr>
-            <th scope="row">P</th>
-            <td>Now</td>
-            <td><input class="form-control" type="number" id="point" name="point" value="0"></td>
-            <td><!--<input type="text" id="reason" name="reason"><input type="submit">-->
-                <div class="input-group mb-3">
-                    <input type="text" id="reason" name="reason" class="form-control"aria-describedby="button-addon2">
-                    <button class="btn btn-outline-secondary" type="submit" id="button-addon2">Submit</button>
-                  </div>
-            </td>
-        </tr>
-    </form>
+<div class='py-5'>
+    <h3>{{ object.name }}</h3> 
+    {% if user.is_staff or user.student == object %}
+    <p class="lead">point : {{object.point}} <a href="{% url 'student_update' object.id %}">update</a></p>
     {% endif %}
-{% for log in logs %}
+</div>
 
-<tr>
-    <th scope="row">{{ forloop.counter }}</th>
-    <td>{{ log.created_date }}</td>
-    {% if log.log_name == 'teacher' %}
-        {% if log.point >= 0 %}
-            <td class="table-info">{{ log.point }}</td>
-        {% else %}
-            <td class="table-danger">{{ log.point }}</td>    
-        {% endif %}
-    {% else %}
-        {% if log.log_name == 'cancel' or log.log_name == 'refund' %}
-            <td class="table-info">{{ log.point }}</td>
-        {% else %}
-            <td class="table-danger">-{{ log.point }}</td>
-        {% endif %}
+<div class="row g-5">
+    {% if user.is_staff %}
+    <div class="col-md-5 col-lg-4 order-md-last">
+        <h4 class="d-flex justify-content-between align-items-center mb-3">
+            <span class="text-primary">Presets</span>
+        </h4>
+        <ul class="list-group mb-3">
+            {% for preset in presets %}<a href="#" style="display: block; cursor: pointer; text-decoration: none;">
+                <li class="list-group-item d-flex justify-content-between lh-sm">
+                    
+                        <div>
+                            <h6 class="my-1">{{ preset.name }}</h6>
+                        </div>
+                        <div>
+                            <h6 class="my-1">{{ preset.point }}점</h6>
+                        </div>
+                    
+                </li></a>
+            {% endfor %}
+            
+            <a href="{% url 'preset_create' %}" class="w-100 btn btn-primary btn-lg">Create New Preset</a>
+        </ul>
+    </div>
     {% endif %}
-    <td>{{log.reason}}</td>
-</tr>
-{% empty %}
-포인트 변동 내역이 없습니다.
-{% endfor %}
-</tbody>
-{% endif %}
-
+    {% if user.is_staff or user.student == object %}
+    <div class="col-md-7 col-lg-8">
+        {% include 'point/includes/messages.html' %}
+        <h4 class="mb-3">로그</h4>
+        <div class="table-responsive">
+            <table class="table talve-sm">
+                <thead>
+                    <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">Date</th>
+                        <th scope="col">Point</th>
+                        <th scope="col">Reason</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if user.is_staff %}
+                    <form method="POST" action="{% url 'point_change' object.id %}">
+                        {% csrf_token %}
+                    <tr>
+                        <th scope="row">-</th>
+                        <td>Now</td>
+                        <td><input class="form-control" type="number" id="point" name="point" value="0"></td>
+                        <td> <div class="input-group mb-3">
+                            <input type="text" id="reason" name="reason" class="form-control"aria-describedby="button-addon2">
+                            <button class="btn btn-outline-secondary" type="submit" id="button-addon2">Submit</button>
+                          </div></td>
+                     </tr>
+                    </form>
+                    {% endif %}
+                    
+                    {% for log in logs %}
+                    <tr>
+                        <th scope="row">{{ forloop.counter }}</th>
+                        <td>{{ log.created_date }}</td>
+                        <td>{{ log.point }}</td>
+                        <td>{{ log.reason}}</td>
+                     </tr>
+                    {% endfor %}
+                    
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+</div>
 {% endblock %}

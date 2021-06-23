@@ -1,9 +1,0 @@
-{% extends 'base.html' %}
-
-{% block content %}
-<form method="POST" action="{% url 'create_students' %}">{% csrf_token %}
-    <label for="number">학생계정을 몇개 만들까요? :</label>
-    <input type="number" id="number" name="number" min="0" value="0"><br>
-    <input type="submit">
-</form>
-{% endblock %}
