@@ -29,7 +29,7 @@
             <header>
                 <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
                     <div class="container-fluid">
-                        <a class="navbar-brand mx-3 mb-0 font-weight-bold font-italic" href="{% url 'home' %}">{% block room %}2학년 1반{% endblock %}</a>
+                        <a class="navbar-brand mx-3 mb-0 font-weight-bold font-italic" href="{% url 'room_now' %}">{% block room %}2학년 1반{% endblock %}</a>
 
                         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
                             <span class="navbar-toggler-icon"></span>
@@ -38,7 +38,7 @@
                         <div class="collapse navbar-collapse" id="navbarSupportedContent">
                             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                                 <li class="nav-item">
-                                    <a class="nav-link active" aria-current="page" href="{% url 'home' %}">Home</a>
+                                    <a class="nav-link active" aria-current="page" href="{% url 'room_now' %}">Home</a>
                                 </li>
                                 {% if user.is_staff %}
 
@@ -54,48 +54,51 @@
                                     <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
                                         <li><a class="dropdown-item" href="{% url 'admin:index' %}">Admin</a></li>
                                         <li><hr class="dropdown-divider"></li>
-                                        <li><a class="dropdown-item" href="{% url 'create_students' %}">Create Students</a></li>
-                                        <li><a class="dropdown-item" href="{% url 'create_room' %}">Create Room</a></li>
-                                        <li><a class="dropdown-item" href="{% url 'close_confirm' %}">Close Room</a></li>
+                                        <li><a class="dropdown-item" href="{% url 'create_students' %}">학생 만들기/추가하기</a></li>
+                                        <li><a class="dropdown-item" href="{% url 'create_room' %}">자리 배정 새로 시작하기</a></li>
+                                        <li><a class="dropdown-item" href="{% url 'close_confirm' %}">자리 배정 끝내기</a></li>
                                     </ul> 
                                 
                                 </li>
 
                                 <li class="nav-item dropdown">
-                                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">List</a>
+                                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">목록 모음</a>
 
                                     <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
                                         
-                                        <li><a class="dropdown-item" href="{% url 'student_list' %}">Student List</a></li>
-                                        <li><a class="dropdown-item" href="{% url 'room_list' %}">Room List</a></li>
-                                        <li><a class="dropdown-item" href="{% url 'preset_list' %}">Preset List</a></li>
+                                        <li><a class="dropdown-item" href="{% url 'student_list' %}">학생 목록</a></li>
+                                        <li><a class="dropdown-item" href="{% url 'room_list' %}">교실 기록</a></li>
+                                        <li><a class="dropdown-item" href="{% url 'preset_list' %}">프리셋 목록</a></li>
                                     </ul> 
                                 
                                 </li>
-                                {% endif %}
-                            </ul>
 
+                            </ul>
+                            {% endif %}
+                                <li class="nav-item">
+                                    <a class="nav-link active" href="{{ user.student.get_absolute_url }}">프로필 및 포인트 내역 보러 가기</a>
+                                </li>
 
                             <div class="navbar-nav">
                                 <li class="nav-item dropdown mx-1">
                                     {% if user.is_active %}
                                     <a class="nav-link dropdown-toggle" href="" id="navbarScrollingDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                        <i class="fas fa-user"></i>&ensp;{{user.student}}{% if user.is_staff %} Teacher {% endif %}&ensp;
+                                        <i class="fas fa-user"></i>&ensp;{{user.student.name}}{% if user.is_staff %} Teacher {% endif %}&ensp;
                                     </a>
 
                                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarScrollingDropdown">
                                         {% if not user.is_staff %}
-                                        <li><a class="dropdown-item" href="{{ user.student.get_absolute_url }}">My point : {{user.student.point}}</a></li>
+                                        <li><a class="dropdown-item" href="{{ user.student.get_absolute_url }}">포인트 : {{user.student.point}}</a></li>
                                         <li><hr class="dropdown-divider"></li>
                                         {% endif %}
 
 
                                         <li><a class="dropdown-item" href="{% url 'logout' %}">Logout</a></li>
-                                        <li><a class="dropdown-item" href="{% url 'password_change' %}">Change Password</a></li>
+                                        <li><a class="dropdown-item" href="{% url 'password_change' %}">비밀번호 변경</a></li>
                                     </ul>
                                     {% else %}
                                     <a class="nav-link dropdown-toggle" href="" id="navbarScrollingDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    <i class="far fa-user"></i>&ensp;Anonymous&ensp;
+                                    <i class="far fa-user"></i>&ensp;로그인하기&ensp;
                                     </a>
 
                                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarScrollingDropdown">
