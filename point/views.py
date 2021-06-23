@@ -149,7 +149,8 @@ def create_students(request):
         n = max(User.objects.count(),1) #1
         import random
         for i in range(int(request.POST['number'])): #구조상 여기서 렉걸림
-            password = int(random.random()*100000000)
+            #password = int(random.random()*100000000)
+            password = 123123
             username = f'student{i+n}'
             user = User.objects.create_user(
                 username,
