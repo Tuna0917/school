@@ -9,7 +9,7 @@ https://docs.djangoproject.com/en/3.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/3.2/ref/settings/
 """
-
+import os
 from pathlib import Path
 import os
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -20,12 +20,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-^gar5nb+bzwy1@4e81o2+ot4b7-%mfr-_q%7w%wuw4qcy(0uub'
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-^gar5nb+bzwy1@4e81o2+ot4b7-%mfr-_q%7w%wuw4qcy(0uub')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = bool(os.environ.get('DJANGO_DEBUG', True))
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['harangpoint.pythonanywhere.com','tricka4.pythonanywhere.com']
 
 
 # Application definition
