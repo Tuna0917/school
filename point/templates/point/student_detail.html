@@ -4,7 +4,7 @@
 <div class='py-5'>
     <h3>{{ object.name }}</h3> 
     {% if user.is_staff or user.student == object %}
-    <p class="lead">포인트 : {{object.point}} <a href="{% url 'student_update' object.id %}">수정하기</a></p>
+    <p class="lead">포인트 : {{object.point}}<br> <a href="{% url 'student_update' object.id %}">이름수정하기</a></p>
     {% endif %}
 </div>
 
