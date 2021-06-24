@@ -15,15 +15,14 @@
             <span class="text-primary">Presets</span>
         </h4>
         <ul class="list-group mb-3">
-            {% for preset in presets %}<a href="#" style="display: block; cursor: pointer; text-decoration: none;">
+            {% for preset in presets %}<a href="{% url 'point_preset' object.id preset.id %}" style="display: block; cursor: pointer; text-decoration: none;">
                 <li class="list-group-item d-flex justify-content-between lh-sm">
                     
                         <div>
                             <h6 class="my-1">{{ preset.name }}</h6>
+                            <small class="text-muted">&ensp;{{ preset.point }}점</small>
                         </div>
-                        <div>
-                            <h6 class="my-1">{{ preset.point }}점</h6>
-                        </div>
+                        <span class="text-muted">Preset {{ preset.id }}</span>
                     
                 </li></a>
             {% endfor %}
@@ -37,7 +36,7 @@
         {% include 'point/includes/messages.html' %}
         <h4 class="mb-3">내역</h4>
         <div class="table-responsive">
-            <table class="table talve-sm">
+            <table class="table table-sm">
                 <thead>
                     <tr>
                         <th scope="col">#</th>
@@ -55,7 +54,7 @@
                         <td>Now</td>
                         <td><input class="form-control" type="number" id="point" name="point" value="0"></td>
                         <td> <div class="input-group mb-3">
-                            <input type="text" id="reason" name="reason" class="form-control"aria-describedby="button-addon2">
+                            <input type="text" id="reason" name="reason" class="form-control" aria-describedby="button-addon2">
                             <button class="btn btn-outline-secondary" type="submit" id="button-addon2">Submit</button>
                           </div></td>
                      </tr>
@@ -63,11 +62,12 @@
                     {% endif %}
                     
                     {% for log in logs %}
+                    
                     <tr>
                         <th scope="row">{{ forloop.counter }}</th>
                         <td>{{ log.created_date }}</td>
-                        <td>{{ log.point }}</td>
-                        <td>{{ log.reason}}</td>
+                        <td>{% if log.status == 'u' %}-{% endif %}{{ log.point }}</td>
+                        <td>{{ log.reason }}{% if log.status == 'c' %}취소함{% endif %}</td>
                      </tr>
                     {% endfor %}
                     

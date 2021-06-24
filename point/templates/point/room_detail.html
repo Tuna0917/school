@@ -7,7 +7,7 @@
         <div class="col-12">
         <div class="card border-dark">
             <div class="card-body text-center">
-            <h5 class="card-title font-weight-bold"> 칠판</h5>
+            <h5 class="card-title font-weight-bold">칠판</h5>
             <h6 class="card-subtitle mb-2 text-muted">{% if object.notice %}공지사항{% endif %}</h6>
             <p class="card-text">{{ object.notice }}</p>
             {% if user.is_staff %}
@@ -21,7 +21,7 @@
 
     {% if seat %}
 
-    <div class="col-1">{% if seat != 'empty' %}
+    <div class="col-sm-2 col-1" style="min-width: 80px;">{% if seat != 'empty' %}
         <div class="card border-dark">
             <div class="card-body text-center">
             <h5 class="card-title">{{ seat.num }}</h5>

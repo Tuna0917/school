@@ -5,9 +5,11 @@
 {% for object in object_list %}
 
 
-{% if object.1 < room.minimum %}말안듣는놈{% endif %}
 
-<a href="{{object.0.get_absolute_url}}">{{ object.0 }}</a> : {{ object.1 }} <br>
+
+<a href="{{object.0.get_absolute_url}}">{{ object.0 }}</a> : {{ object.1 }} 
+{% if object.1 < room.minimum %}<p class="text-danger"><strong>최소 입찰 수 미달</strong></p>{% else %}<br><br>{% endif %}
+
 
 {% endfor %}
 

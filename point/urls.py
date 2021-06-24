@@ -11,6 +11,7 @@ urlpatterns += [
     path('student/<int:pk>', StudentDetailView.as_view(), name='student_detail'),
     path('student/<int:pk>/update', StudentUpdateView.as_view(), name='student_update'),
     path('student/<int:pk>/point', point_change, name='point_change'),
+    path('student/<int:student_id>/preset/<int:preset_id>', point_preset, name='point_preset'),
     path('students/create', create_students, name='create_students'),
     path('log/<uuid:pk>/cancle', cancel, name='cancel')
 ]
@@ -37,7 +38,6 @@ urlpatterns += [
     path('preset/<int:pk>', PresetDetailView.as_view(), name='preset_detail'),
     path('preset/<int:pk>/update', PresetUpdateView.as_view(), name='preset_update'),
     path('preset/<int:pk>/delete', PresetDeleteView.as_view(), name='preset_delete'),
-
     #path('charges', ChargeListView.as_view(), name='charge_list'),
 ]
 

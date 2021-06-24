@@ -24,7 +24,7 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-^gar5nb+bzwy1@
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = bool(os.environ.get('DJANGO_DEBUG', True))
 
-ALLOWED_HOSTS = ['harangpoint.pythonanywhere.com','tricka4.pythonanywhere.com']
+ALLOWED_HOSTS = ['127.0.0.1','harangpoint.pythonanywhere.com','tricka4.pythonanywhere.com']
 
 
 # Application definition
