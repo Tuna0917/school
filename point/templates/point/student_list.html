@@ -1,30 +1,27 @@
 {% extends 'school.html' %}
 
-
-{% block teacher %}
-<h1>Student List</h1>
-<br>
-
-
-{% for object in object_list %}
-
-    <h3><a href="{{ object.get_absolute_url }}">{{ object }}</a></h3>
-    <p>상태 : {{ object.get_status_display }}</p>
-
-{% endfor %}
-<br>
-
-<div>
-    <span>
-        {% if page_obj.has_previous %}
-        <a href="?page={{ page_obj.previous_page_number }}">Previous</a>
-        {% endif %}
-
-        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
-
-        {% if page_obj.has_next %}
-        <a href="?page={{ page_obj.next_page_number }}">Next</a>
-        {% endif %}
-    </span>
-</div>
+{% block content %}
+    <h1>학생 현황</h1>
+    <div class="container">
+        <table class="table table-hover">
+          <thead>
+            <tr>
+              <th scope="col">번호</th>
+              <th scope="col">이름</th>
+              <th scope="col">포인트</th>
+              <th scope="col">상태</th>
+            </tr>
+          </thead>
+          <tbody>
+          {% for object in object_list %}
+            <tr style = "cursor:pointer;" onclick='location.href="{{ object.get_absolute_url }}"'>
+              <th scope="row">{{ object.id }}</th>
+              <td>{{ object.name }}</td>
+              <td>{{ object.point }}</td>
+              <td>{{ object.get_status_display }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+    </div>
 {% endblock %}

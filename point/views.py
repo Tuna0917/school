@@ -4,17 +4,18 @@ from django.urls import reverse_lazy
 from .models import *
 from django.views.generic import *
 from django.views.generic import edit
-from django.http import HttpResponseRedirect, HttpResponseNotFound
+from django.http import *
 from django.contrib import messages
-
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.views.decorators.http import require_POST
 
 # Create your views here.
-
+class HomeTemplateView(LoginRequiredMixin, TemplateView):
+    template_name = 'home.html'
 
 class StudentListView(ListView):
     model = Student
-    paginate_by = 8
-
 
 class StudentDetailView(DetailView):
     model = Student
@@ -88,7 +89,7 @@ class SeatDetailView(DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         seat = context['object']
-        context['logs'] = Log.objects.filter(obj_name='seat', obj_id=seat.id, canceled=False)
+        context['logs'] = Log.objects.filter(obj_name='seat', obj_id=seat.id)
         if not self.request.user.is_staff:
             try:
                 context['log'] = Log.objects.get(obj_name='seat', obj_id=seat.id, canceled=False,
@@ -129,6 +130,13 @@ class PresetDeleteView(DeleteView):
         return resolve_url('preset_list')
 
 
+class LogArchiveView(ArchiveIndexView):
+    model = Log
+    date_field = 'created_date'
+
+
+
+@login_required
 def create_room(request):
     if (not Room.objects.filter(status='a')) and request.user.is_staff:  # 열려있는 교실이 없고 선생님이면.
         if request.method == 'POST':
@@ -147,7 +155,7 @@ def create_room(request):
         return render(request, 'room_create.html')
     return HttpResponseNotFound('<h1>Page not found</h1>')
 
-
+@login_required
 def create_students(request):
     if not request.user.is_staff:
         return HttpResponseNotFound('<h1>Page not found</h1>')
@@ -175,7 +183,7 @@ def create_students(request):
         return render(request, 'student_create_complete.html', context=context)
     return render(request, 'student_create.html')
 
-
+@login_required
 def auction(request, pk):
     seat = Seat.objects.get(id=pk)
     if seat.room.status == 'u':
@@ -199,7 +207,7 @@ def auction(request, pk):
             )
     return redirect('room_now')
 
-
+@login_required
 def point_change(request, pk):
     student = Student.objects.get(id=pk)
     if request.user.is_staff and request.method == 'POST':
@@ -220,6 +228,7 @@ def point_change(request, pk):
         return HttpResponseRedirect(student.get_absolute_url())
     return HttpResponseNotFound('<h1>Page not found</h1>')
 
+@login_required
 def point_preset(request, student_id, preset_id):
     if request.user.is_staff:
 
@@ -243,8 +252,8 @@ def point_preset(request, student_id, preset_id):
     return HttpResponseNotFound('<h1>Page not found</h1>')
 
 
-
-def cancel(request, pk): # 로그를 cancle 하려면 로그의 id를 알아야할텐데.
+@login_required
+def cancel(request, pk): # 로그를 cancel 하려면 로그의 id를 알아야할텐데.
     log = Log.objects.get(id=pk)
     if request.user.is_staff or request.user.student == log.log_student:
         if log.status == 'u' and (not log.canceled):
@@ -256,15 +265,32 @@ def cancel(request, pk): # 로그를 cancle 하려면 로그의 id를 알아야�
             student.save()
 
             Log.objects.create(
+                status='c',
                 obj_name='log',
                 log_student=student,
                 cancel_log=log,
                 point=log.point,
                 reason=f'{log.reason} 취소'
             )
+        if log.status == 't' and (not log.canceled):
+            log.canceled = True
+            log.save()
+
+            student = log.log_student
+            student.point -= log.point
+            student.save()
+
+            Log.objects.create(
+                status='c',
+                obj_name='log',
+                log_student=student,
+                cancel_log=log,
+                point=-log.point,
+                reason=f'{log.reason} 취소'
+            )
     return redirect('room_now')
 
-
+@login_required
 def close_confirm(request):
     if request.user.is_staff:
         if Room.objects.filter(status='a'):
@@ -283,7 +309,7 @@ def close_confirm(request):
         return render(request, 'close_confirm.html', context=context)
     return HttpResponseNotFound('<h1>Page not found</h1>')
 
-
+@login_required
 def close_room(request):
     if not request.user.is_staff:
         return HttpResponseNotFound('<h1>Page not found</h1>')
@@ -294,7 +320,7 @@ def close_room(request):
     for log in logs:
         seat = Seat.objects.get(id=log.obj_id)
         student = log.log_student
-        if seat.status == 'u' or (seat in student.seat_set.all()):
+        if (seat.status == 'u') or (student in has):
             log.canceled = True
             log.save()
 
@@ -302,11 +328,12 @@ def close_room(request):
             student.save()
 
             Log.objects.create(
+                status='c',
                 obj_name='log',
                 log_student=student,
                 cancel_log=log,
                 point=log.point,
-                reason='유찰됨'
+                reason=f'{log.reason} 유찰됨'
             )
         else:
             seat.status = 'u'
@@ -337,7 +364,7 @@ def close_room(request):
     room.save()
     return room_now(request)
 
-
+@login_required
 def room_now(request):
     if Room.objects.count():
         context = dict()
@@ -359,3 +386,46 @@ def room_now(request):
             return redirect('create_room')
         else:
             return HttpResponseNotFound('<h1>Page not found</h1>')
+
+@login_required
+def checkbox_test(request): # 보이는 함수랑 form처리하는 함수는 따로 만들것.
+    context = dict()
+    context['object_list'] = Student.objects.all()
+
+    return render(request, 'std_list.html', context=context)
+
+
+
+@login_required
+@require_POST
+def checkbox_point(request):
+    # print(request.POST.keys())
+    # print(request.POST.getlist('id[]'))
+    for pk in request.POST.getlist('id[]'):
+        student = Student.objects.get(id=pk)
+        post = request.POST
+
+        student.point += int(post['point'])
+        student.save()
+
+        log = Log.objects.create(
+            status='t',
+            obj_name=post.get('name', 'teacher'),
+            obj_id=int(post.get('id', '0')),
+            point=int(post['point']),
+            log_student=student,
+            reason=post.get('reason', '')
+        )
+    messages.success(request, 'Profile details updated.')
+    return redirect('test')
+
+@login_required
+def changer(request):  # 나도 ajax 쓴다
+    if request.is_ajax():
+        print(request.POST['pk'])
+    student = Student.objects.get(id=request.POST['pk'])
+    context = {'object':student}
+    context['logs'] = Log.objects.filter(log_student=context['object']).order_by('-created_date').all()
+    context['charges'] = Charge.objects.filter(student=context['object']).all()
+    context['presets'] = Preset.objects.all()
+    return render(request, 'std_view.html',context=context)

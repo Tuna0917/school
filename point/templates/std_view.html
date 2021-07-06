@@ -1,0 +1,54 @@
+<div id="student" class="col-md-8 col-lg-9">
+    <div class='py-1'>
+    <a href="{{ object.get_absolute_url }}"><h3>{{ object.name }}</h3></a>
+    {% if user.is_staff or user.student == object %}
+    <p class="lead">포인트 : {{object.point}}<br> <a href="{% url 'student_update' object.id %}">이름수정하기</a></p>
+    {% endif %}
+</div>
+
+<div class="row g-5">
+    {% if user.is_staff or user.student == object %}
+    <div class="col-12">
+        {% include 'point/includes/messages.html' %}
+        <h4 class="mb-3">내역</h4>
+        <div class="table-responsive" style="overflow-y: scroll; max-height:300px;">
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">날짜</th>
+                        <th scope="col">포인트</th>
+                        <th scope="col">이유</th>
+                        <th scope="col">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+
+
+                    {% for log in logs %}
+                    {% if log.canceled %}
+                    <tr class="cancel">
+                        {% else %}
+                        <tr>
+                    {% endif %}
+                        <th scope="row">{{ forloop.counter }}</th>
+                        <td>{{ log.created_date | date:"N d, Y" }}</td>
+                        <td>{% if log.status == 'u' %}-{% endif %}{{ log.point }}</td>
+                        <td>{{ log.reason }}</td>
+                        {% if user.is_staff %}{% if log.status == 't' and not log.canceled %}
+                        <td class="table-danger"><a href="{% url 'cancel' log.id %}">취소</a></td>
+                        {% else %}
+                            <td></td>
+                        {% endif %}
+                        {% endif %}
+                     </tr>
+                    {% endfor %}
+
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+</div>

@@ -1,5 +1,6 @@
 {% extends 'school.html' %}
 
+
 {% block content %}
 <div class='py-5'>
     <h3>{{ object.name }}</h3> 
@@ -43,6 +44,9 @@
                         <th scope="col">날짜</th>
                         <th scope="col">포인트</th>
                         <th scope="col">이유</th>
+                        {% if user.is_staff %}
+                        <th scope="col">Action</th>
+                        {% endif %}
                     </tr>
                 </thead>
                 <tbody>
@@ -55,19 +59,29 @@
                         <td><input class="form-control" type="number" id="point" name="point" value="0"></td>
                         <td> <div class="input-group mb-3">
                             <input type="text" id="reason" name="reason" class="form-control" aria-describedby="button-addon2">
-                            <button class="btn btn-outline-secondary" type="submit" id="button-addon2">Submit</button>
+
                           </div></td>
+                        <td> <button class="btn btn-outline-secondary" type="submit" id="button-addon2">Submit</button></td>
                      </tr>
                     </form>
                     {% endif %}
                     
                     {% for log in logs %}
-                    
-                    <tr>
+                    {% if log.canceled %}
+                    <tr class="cancel">
+                        {% else %}
+                        <tr>
+                    {% endif %}
                         <th scope="row">{{ forloop.counter }}</th>
                         <td>{{ log.created_date }}</td>
                         <td>{% if log.status == 'u' %}-{% endif %}{{ log.point }}</td>
-                        <td>{{ log.reason }}{% if log.status == 'c' %}취소함{% endif %}</td>
+                        <td>{{ log.reason }}</td>
+                        {% if user.is_staff %}{% if log.status == 't' and not log.canceled %}
+                        <td class="table-danger"><a href="{% url 'cancel' log.id %}">취소하기</a></td>
+                        {% else %}
+                            <td></td>
+                        {% endif %}
+                        {% endif %}
                      </tr>
                     {% endfor %}
                     

@@ -38,15 +38,19 @@
 
 
     {% for log in logs %}
-         <tr>
+        {% if log.canceled %}
+         <tr class="cancel">
+            {% else %}
+            <tr>
+         {% endif %}
             <th scope="row">{{ forloop.counter }}</th>
             <td>{{ log.created_date }}</td>
             {% if user.is_staff %}<td style = "cursor:pointer;" onclick='location.href="{{log.log_student.get_absolute_url}}"'>{% else %}<td>{% endif %}{{ log.log_student }}</td>
             <td>{{ log.point }}포인트로 입찰함.</td>
             {% if object.room.status == 'a' %}
+                {% if not log.canceled %}
             <td class="table-danger"><a href="{% url 'cancel' log.id %}?next={{ request.path }}">취소하기.</a></td>
-            {% else %}
-            <td>-</td>
+                    {% endif %}
             {% endif %}  
         </tr>
 

@@ -1,0 +1,87 @@
+{% extends 'school.html' %}
+
+{% block extra-style %}
+    <style>
+        .box {
+
+            max-height:531px;
+            color: #262323;
+            background-color: #dbd6d6;
+            margin:10px 30px 20px 0;
+        }
+        .auto {overflow: auto;}
+        .visible {overflow: visible;}
+        .hidden {overflow: hidden;}
+        .scroll-x {overflow-x: scroll;}
+        .scroll-y {overflow-y: scroll;}
+        .scroll {overflow: scroll;}
+
+        a {
+            text-decoration: none;
+            color: black;
+        }
+    </style>
+{% endblock %}
+
+{% block aside %}
+{% endblock %}
+
+{% block teacher %}
+    <div class="container">
+    {% include 'point/includes/messages.html' %}
+        <form method="POST" action="{% url 'tptp' %}">{% csrf_token %}
+            <div class="row g-5">
+                <div class="col-md-4 col-lg-3 order-md-first">
+                    <div class="box scroll-y">
+                        {% for object in object_list %}
+                            <div class="form-check h5">
+                              <input class="form-check-input" type="checkbox" name ="id[]" value="{{ object.id }}" id="flexCheckDefault">
+                              <label class="form-check-label">
+                                  <input type="button" class="ajax btn btn-outline-dark" name="{{ object.id }}" value="{{ object.id }}번"> {{ object.name }}
+                              </label>
+                                <p class="h6">포인트 : {{ object.point }}</p>
+                            </div>
+
+                        {% endfor %}
+                    </div>
+
+                </div>
+                <div id="student" class="col-md-8 col-lg-9">
+                </div>
+            <div class="col-md-6 col-xs-12">
+                <div class="input-group mb-3">
+                    <span class="input-group-text">이유</span>
+                    <input type="text" class="form-control" name="reason">
+                    <span class="input-group-text">포인트</span>
+                    <input type="number" class="form-control" name="point" value="0">
+                    <button class="btn btn-outline-secondary" type="submit">Button</button>
+                    </div>
+            </div>
+
+            </div>
+        </form>
+    </div>
+{% endblock %}
+
+{% block extra-script %}
+    <script>
+        $('.ajax').click(function() {
+            const pk = $(this).attr('name')
+            $.ajax({
+                type: "POST",
+                url:"{% url 'ccc'  %}", // list url을 불러옴
+                data: {'pk':pk,'csrfmiddlewaretoken': '{{ csrf_token }}', },
+                dataType: 'html', // list의 형태는 html
+                success: function(data){ // 성공했을 때 일단 good을 alert로 띄운다.
+
+                    $('#student').html(data) // 그 이후에 example div에 list html의 data를 가져온다.
+                },
+                error: function(request, status, error){ // 실패했을 때 bad alert, 에러가 무엇이었는지, 그리고 간단한 html 출력
+                    alert(error);
+                    $('#student').html('AJAX 통신에 실패했습니다.');
+                }
+            })
+        })
+    </script>
+
+{% endblock %}

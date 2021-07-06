@@ -1,0 +1,26 @@
+{% extends 'school.html' %}
+
+{% block content %}
+    <h1>학생 현황</h1>
+번호 이름 포인트 재학상태
+    <table class="table">
+      <thead>
+        <tr>
+          <th scope="col">번호</th>
+          <th scope="col">이름</th>
+          <th scope="col">포인트</th>
+          <th scope="col">상태</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for object in object_list %}
+        <tr>
+          <th scope="row">{{ object.id }}</th>
+          <td>{{ object.name }}</td>
+          <td>{{ object.point }}</td>
+          <td>{{ object.get_status_display }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+{% endblock %}
