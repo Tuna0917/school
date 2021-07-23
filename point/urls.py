@@ -3,11 +3,13 @@ from django.urls import path
 from .views import *
 
 
-urlpatterns = [path('', HomeTemplateView.as_view(), name='home'),
-               path('student/view', checkbox_test, name='test'),
-               path('tptp', checkbox_point, name='tptp'),
-               path('ccc', changer, name='ccc')
-               ]
+urlpatterns = [
+    path('', room_now, name='home'),
+    # path('', HomeTemplateView.as_view(), name='home'),
+    path('student/view', checkbox_test, name='test'),
+    path('tptp', checkbox_point, name='tptp'),
+    path('ccc', changer, name='ccc')
+    ]
 
 # 학생 관련
 urlpatterns += [
@@ -45,4 +47,11 @@ urlpatterns += [
     # path('charges', ChargeListView.as_view(), name='charge_list'),
 ]
 
-# def들
+# Archive
+urlpatterns += [
+    path('archive/', LogArchiveView.as_view(),name='log_archive'),
+    path('archive/<int:year>/', LogYearArchiveView.as_view(),name='log_year_archive'),
+    path('archive/<int:year>/<str:month>/', LogMonthArchiveView.as_view(), name='log_month_archive'),
+    path('archive/<int:year>/<str:month>/<int:day>/', LogDayArchiveView.as_view(),name='log_day_archive'),
+    path('archive/today/', LogTodayArchiveView.as_view(), name='log_today_archive'),
+]

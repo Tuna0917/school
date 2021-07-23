@@ -112,6 +112,8 @@ class PresetCreateView(CreateView):
     fields = ['name', 'point']
 
     def get_success_url(self) -> str:
+        if self.request.GET.get('next',False):
+            return self.request.GET['next']
         return resolve_url('preset_list')
 
 
@@ -133,6 +135,36 @@ class PresetDeleteView(DeleteView):
 class LogArchiveView(ArchiveIndexView):
     model = Log
     date_field = 'created_date'
+    template_name = 'point/archive/log_archive.html'
+    allow_empty = True
+    queryset = Log.objects.filter(status='t').all()
+
+
+class LogYearArchiveView(YearArchiveView):
+    model = Log
+    date_field = 'created_date'
+    template_name = 'point/archive/log_archive_year.html'
+    make_object_list = True
+    allow_empty = True
+
+class LogMonthArchiveView(MonthArchiveView):
+    model = Log
+    date_field = 'created_date'
+    template_name = 'point/archive/log_archive_month.html'
+    allow_empty = True
+
+class LogDayArchiveView(DayArchiveView):
+    model = Log
+    date_field = 'created_date'
+    template_name = 'point/archive/log_archive_day.html'
+    allow_empty = True
+
+class LogTodayArchiveView(TodayArchiveView):
+    model = Log
+    date_field = 'created_date'
+    template_name = 'point/archive/log_archive_day.html'
+    allow_empty = True
+
 
 
 
@@ -288,6 +320,8 @@ def cancel(request, pk): # 로그를 cancel 하려면 로그의 id를 알아야�
                 point=-log.point,
                 reason=f'{log.reason} 취소'
             )
+    if 'next' in request.GET:
+        return redirect(request.GET['next'])
     return redirect('room_now')
 
 @login_required
@@ -420,9 +454,9 @@ def checkbox_point(request):
     return redirect('test')
 
 @login_required
-def changer(request):  # 나도 ajax 쓴다
-    if request.is_ajax():
-        print(request.POST['pk'])
+def changer(request):
+    # if request.is_ajax():
+    #     print(request.POST['pk'])
     student = Student.objects.get(id=request.POST['pk'])
     context = {'object':student}
     context['logs'] = Log.objects.filter(log_student=context['object']).order_by('-created_date').all()

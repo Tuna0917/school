@@ -5,7 +5,7 @@
     <label for="num">좌석 수:</label>
     <input type="number" id="num" name="num" min="0" value="0"><br><br>
     <label for="row">줄 수:</label>
-    <input type="number" id="row" name="row" min="0" value="0"><br><br>
+    <input type="number" id="row" name="row" min="0" max="8" value="0"><br><br>
     <label for="minimum">최소 입찰 좌석 수:</label>
     <input type="number" id="minimum" name="minimum" min="0" value="0"><br><br>
     <input type="submit" class="checker">
@@ -17,7 +17,7 @@
     <script>
     $('.checker').on('click', function() {
 
-            if (window.confirm('text'))
+            if (window.confirm('좌석 수가 맞는지 확인해주세요.(다음 자리변경까지 수정할 수 없습니다.)'))
         {
             // They clicked Yes
             return true

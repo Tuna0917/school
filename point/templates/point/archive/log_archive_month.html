@@ -1,0 +1,40 @@
+
+{% extends 'school.html' %}
+{% block title %}log_archive_month.html{% endblock %}
+
+{% block teacher %}
+<h1>{{ month|date:"Y년 n월" }} 기록</h1>
+
+<div class="row g-5">
+    <div class="col-md-5 col-lg-4 order-md-last">
+
+        {% for date in date_list %}
+            <a href="{% url 'log_day_archive' date|date:'Y' date|date:'b' date|date:'j' %}">{{ date|date:"d일"}}</a><br>
+        {% endfor %}
+
+    </div>
+    <div class="col-md-7 col-lg-8">
+        <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th scope="col">날짜</th>
+                  <th scope="col">학생</th>
+                  <th scope="col">포인트</th>
+                  <th scope="col">이유</th>
+                </tr>
+              </thead>
+              <tbody>
+              {% for log in object_list %}
+                <tr>
+                  <th scope="row"><strong>{{ log.created_date|date:"Y-m-d" }}</strong></th>
+                  <td>{{ log.log_student }} ({{ log.log_student.id }}번)</td>
+                  <td>{{ log.point }}</td>
+                  <td>{{ log.reason }}</td>
+                </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+    </div>
+
+</div>
+{% endblock %}
