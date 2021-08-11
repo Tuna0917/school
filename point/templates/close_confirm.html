@@ -2,6 +2,11 @@
 
 {% block teacher %}
 
+    주인없이 비활성화 되어있는 좌석<br><br>
+    {% for seat in seats %}
+        {{ seat }},&ensp;
+    {% endfor %}
+    <hr>
 {% for object in object_list %}
 
 

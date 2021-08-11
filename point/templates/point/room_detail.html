@@ -21,15 +21,30 @@
 
     {% if seat %}
 
-    <div class="col-sm-2 col-1" style="min-width: 80px;">{% if seat != 'empty' %}
-        <div class="card border-dark">
-            <div class="card-body text-center">
+    <div class="col-2 col-auto" style="min-width: 80px;">{% if seat != 'empty' %}
+        {% if room.status == 'u' or seat.status == 'a'  or user.is_staff %}
+            {% if user.student in seat.ban_list.all %}
+                <div class="card border-white text-white bg-dark">
+            {% else %}
+                <div class="card border-dark">
+            {% endif %}
+        {% else %}
+            <div class="card border-white text-white bg-dark">
+        {% endif %}
+                <div class="card-body text-center">
             <h5 class="card-title">{{ seat.num }}</h5>
             <h6 class="card-subtitle mb-2 text-muted"></h6>
             {% if seat.owner %}
             <p class="card-text">{{ seat.owner }}</p>
             {% endif %}
-            <a href="{{ seat.get_absolute_url }}" class="stretched-link"></a>
+            {% if room.status == 'u' or seat.status == 'a'  or user.is_staff %}
+                {% if user.student in seat.ban_list.all %}
+                    <!-- 안됨 -->
+                {% else %}
+                    <a href="{{ seat.get_absolute_url }}" class="stretched-link"></a>
+                {% endif %}
+                <!-- 안됨 -->
+            {% endif %}
             </div>
         </div>{% endif %}
     </div>

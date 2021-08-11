@@ -1,8 +1,24 @@
 {% extends 'school.html' %}
 
 {% block content %}
-
 <h1>{{object}}</h1>
+    {% if user.is_staff %}
+        상태 :
+    {% if object.owner and object.status == 'u' %}{{ object.get_status_display }}
+        {% else %}
+        <a href="{% url 'seat_status_update' object.id %}">
+        {{ object.get_status_display }}
+    </a>
+{% endif %}
+        <br>
+
+        {% if object.owner %}
+            좌석 주인 : {{ object.owner }} /
+            <a href="{% url 'seat_owner_delete' object.id %}">좌석 주인 제거</a>
+        {% else %}
+            <a href="{% url 'seat_owner_update' object.id %}">좌석 주인 설정</a>
+        {% endif %}
+    {% endif %}
 <br>
 {% if not user.is_staff %} 
     {% if not log %}
@@ -20,62 +36,70 @@
     {% endif %}
 
 {% endif %}
-
-<table class="table {% if user.is_staff %}table-hover{% endif %}">
-    <thead>
-        <tr>
-            <th scope="col">#</th>
-            <th scope="col">Date</th>
-            <th scope="col">Student</th>
-            <th scope="col">Detail</th>
-            {% if object.room.status == 'a' %}
-            <th scope="col">Action</th>
-            {% endif %}
-        </tr>
-      </thead>
-      <tbody>
-{% if user.is_staff or object.room.status == 'u' %}
-
-
-    {% for log in logs %}
-        {% if log.canceled %}
-         <tr class="cancel">
-            {% else %}
-            <tr>
-         {% endif %}
-            <th scope="row">{{ forloop.counter }}</th>
-            <td>{{ log.created_date }}</td>
-            {% if user.is_staff %}<td style = "cursor:pointer;" onclick='location.href="{{log.log_student.get_absolute_url}}"'>{% else %}<td>{% endif %}{{ log.log_student }}</td>
-            <td>{{ log.point }}포인트로 입찰함.</td>
-            {% if object.room.status == 'a' %}
-                {% if not log.canceled %}
-            <td class="table-danger"><a href="{% url 'cancel' log.id %}?next={{ request.path }}">취소하기.</a></td>
-                    {% endif %}
-            {% endif %}  
-        </tr>
-
-    {% endfor %}
-
-
-{% else %} <!--외부인 or 학생 그치만 외부인은 content블록 안쪽을 못 보니 사실상 학생만.-->
-
-    {% if log %}
-        <tr>
-            <th scope="row">-</th>
-            <td>{{ log.created_date }}</td>
-            <td> 나 </td>
-            <td>{{ log.point }}포인트로 입찰함.</td>
-            {% if object.room.status == 'a' %}
-            <td class="table-danger"><a href="{% url 'cancel' log.id %}?next={{ request.path }}">취소하기.</a></td>
-            {% else %}
-            <td>-</td>
-            {% endif %}  
-        </tr>
+<div class="row g-5">
+    {% if user.is_staff %}
+    <div class="col-md-5 col-lg-4 order-md-last">
+        금지 명단<br>
+        {% for student in object.ban_list.all %}
+            {{ student }}<br>
+        {% endfor %}
+        <a href="{% url 'seat_ban_update' object.id %}">업데이트</a>
+    </div>
     {% endif %}
+    <div class="col-md-7 col-lg-8">
+        <table class="table {% if user.is_staff %}table-hover{% endif %}">
+            <thead>
+                <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">Date</th>
+                    <th scope="col">Student</th>
+                    <th scope="col">Detail</th>
+                    {% if object.room.status == 'a' %}
+                    <th scope="col">Action</th>
+                    {% endif %}
+                </tr>
+              </thead>
+              <tbody>
+              {% if user.is_staff or object.room.status == 'u' %}
+                  {% for log in logs %}
+                    {% if log.canceled %}
+                     <tr class="cancel">
+                        {% else %}
+                        <tr>
+                     {% endif %}
+                        <th scope="row">{{ forloop.counter }}</th>
+                        <td>{{ log.created_date }}</td>
+                        {% if user.is_staff %}<td style = "cursor:pointer;" onclick='location.href="{{log.log_student.get_absolute_url}}"'>{% else %}<td>{% endif %}{{ log.log_student }}</td>
+                        <td>{{ log.point }}포인트로 입찰함.</td>
+                        {% if object.room.status == 'a' %}
+                            {% if not log.canceled %}
+                        <td class="table-danger"><a href="{% url 'cancel' log.id %}?next={{ request.path }}">취소하기.</a></td>
+                                {% endif %}
+                        {% endif %}
+                    </tr>
 
-{% endif %}
-</tbody>
+                {% endfor %}
 
+              {% else %} <!--외부인 or 학생 그치만 외부인은 content 블록 안쪽을 못 보니 사실상 학생만.-->
+                  {% if log %}
+                    <tr>
+                        <th scope="row">-</th>
+                        <td>{{ log.created_date }}</td>
+                        <td> 나 </td>
+                        <td>{{ log.point }}포인트로 입찰함.</td>
+                        {% if object.room.status == 'a' %}
+                        <td class="table-danger"><a href="{% url 'cancel' log.id %}?next={{ request.path }}">취소하기.</a></td>
+                        {% else %}
+                        <td>-</td>
+                        {% endif %}
+                    </tr>
+                  {% endif %}
+
+            {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
 
 
 

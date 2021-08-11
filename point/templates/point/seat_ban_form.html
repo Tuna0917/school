@@ -1,0 +1,13 @@
+{% extends 'school.html' %}
+
+{% block content %}
+
+<form action="" method="post" class="card pt-3">
+    {% csrf_token %}
+
+    {{ form.ban_list }}
+    <input type="submit" value="Submit" />
+    
+</form>
+
+{% endblock %}

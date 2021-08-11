@@ -36,6 +36,7 @@ class Student(models.Model):
         return resolve_url('student_detail', self.id)
 
 
+
 class Log(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     STATUS = (
@@ -87,8 +88,8 @@ class Seat(models.Model):
     created_date = models.DateTimeField(auto_now_add=True)
     modified_date = models.DateTimeField(auto_now=True)
     STATUS = (
-        ('a', '가능'),
-        ('u', '불가능')
+        ('a', '활성화'),
+        ('u', '비활성화')
     )
     room = models.ForeignKey(Room, on_delete=models.CASCADE)
     num = models.IntegerField()
@@ -99,6 +100,7 @@ class Seat(models.Model):
         default='a'
     )
     owner = models.ForeignKey(Student, on_delete=models.SET_NULL, null=True)
+    ban_list = models.ManyToManyField(Student, related_name='banned_seat_set')
 
     def __str__(self):
         return f"{self.num}번 자리"

@@ -34,7 +34,11 @@ urlpatterns += [
     path('room/<int:pk>/update', RoomUpdateView.as_view(), name='room_update'),
 
     path('seat/<int:pk>', SeatDetailView.as_view(), name='seat_detail'),
+    path('seat/<int:pk>/ban_update', SeatBanlistUpdateView.as_view(), name='seat_ban_update'),
+    path('seat/<int:pk>/owner_update', SeatOwnerUpdateView.as_view(), name='seat_owner_update'),
+    path('seat/<int:pk>/status_update', change_status, name='seat_status_update'),
     path('seat/<int:pk>/auction', auction, name='auction'),
+    path('seat/<int:pk>/owner_delete', owner_delete, name='seat_owner_delete')
 ]
 
 # 선생님 관련
