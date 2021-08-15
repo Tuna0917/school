@@ -1,7 +1,7 @@
 {% extends 'school.html' %}
 
 {% block teacher %}
-
+<div class="container py-5">
     주인없이 비활성화 되어있는 좌석<br><br>
     {% for seat in seats %}
         {{ seat }},&ensp;
@@ -17,6 +17,14 @@
 
 
 {% endfor %}
+</div>
 
-<a href="{% url 'close_room' %}">진행하기</a>
+{% endblock %}
+
+{% block footer %}
+<footer class="fixed-bottom mt-auto py-2 bg-dark">
+    <div class="container">
+      <a class="btn btn-success" href="{% url 'close_room' %}">진행하기</a>
+    </div>
+  </footer>
 {% endblock %}

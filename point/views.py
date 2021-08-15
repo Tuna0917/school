@@ -437,7 +437,7 @@ def close_room(request):
             break
     room.status = 'u'
     room.save()
-    return room_now(request)
+    return redirect('room_now')
 
 
 @login_required
