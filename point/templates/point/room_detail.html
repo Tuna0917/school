@@ -22,7 +22,7 @@
     {% if seat %}
 
     <div class="col-2 col-auto" style="min-width: 80px;">{% if seat != 'empty' %}
-        {% if room.status == 'u' or seat.status == 'a'  or user.is_staff %}
+        {% if object.status == 'u' or seat.status == 'a'  or user.is_staff %}
             {% if user.student in seat.ban_list.all %}
                 <div class="card border-white text-white bg-dark">
             {% else %}
@@ -37,7 +37,7 @@
             {% if seat.owner %}
             <p class="card-text">{{ seat.owner }}</p>
             {% endif %}
-            {% if room.status == 'u' or seat.status == 'a'  or user.is_staff %}
+            {% if object.status == 'u' or seat.status == 'a'  or user.is_staff %}
                 {% if user.student in seat.ban_list.all %}
                     <!-- 안됨 -->
                 {% else %}
