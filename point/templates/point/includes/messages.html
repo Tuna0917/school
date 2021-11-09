@@ -1,7 +1,7 @@
 {% for message in messages %}
 <div class="container-fluid p-0">
   <div class="alert {{ message.tags }} alert-dismissible fade show" role="alert">
-    <strong>성공!</strong>
+    {% if message.tags == 'alert-success' %}<strong>성공!</strong>{% else %}<strong>학생을 선택해주세요.</strong>{% endif %}
     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
   </div>
 </div>

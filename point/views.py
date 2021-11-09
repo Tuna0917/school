@@ -373,7 +373,7 @@ def close_confirm(request):
                 if not s.owner:
                     context['seats'].append(s)
         '''
-        미달인 학생 - 입찰한 좌석 수. 
+        미달인 학생 - 입찰한 좌석 수.
         '''
 
         context['object_list'] = [(student, Log.objects.filter(obj_name='seat', obj_id__in=seats, log_student=student,
@@ -494,7 +494,10 @@ def checkbox_point(request):
                 log_student=student,
                 reason=post.get('reason', '')
             )
-        messages.success(request, 'Profile details updated.')
+        if bool(request.POST.getlist('id[]')):
+            messages.success(request, 'Profile details updated.')
+        else:
+            messages.error(request, 'No students are selected.')
         return redirect('test')
 
 
