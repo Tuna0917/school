@@ -13,7 +13,7 @@ from .forms import BanForm
 
 # Create your views here.
 class HomeTemplateView(LoginRequiredMixin, TemplateView):
-    template_name = 'home.html'
+    template_name = "home.html"
 
 
 class StudentListView(ListView):
@@ -25,23 +25,29 @@ class StudentDetailView(DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['logs'] = Log.objects.filter(log_student=context['object']).order_by('-created_date').all()
-        context['charges'] = Charge.objects.filter(student=context['object']).all()
-        context['presets'] = Preset.objects.all()
+        context["logs"] = (
+            Log.objects.filter(log_student=context["object"])
+            .order_by("-created_date")
+            .all()
+        )
+        context["charges"] = Charge.objects.filter(student=context["object"]).all()
+        context["presets"] = Preset.objects.all()
         return context
 
 
 class StudentUpdateView(UpdateView):
     model = Student
-    fields = ['name', ]  # 학생은 'name'만 보이게 하기
+    fields = [
+        "name",
+    ]  # 학생은 'name'만 보이게 하기
 
     def get_success_url(self):
-        return reverse('student_detail', kwargs={'pk': self.object.id})
+        return reverse("student_detail", kwargs={"pk": self.object.id})
 
     def dispatch(self, request, *args, **kwargs):
         # Check permissions for the request.user here
         if request.user.is_staff:
-            self.fields = ['name', 'status']
+            self.fields = ["name", "status"]
         return super().dispatch(request, *args, **kwargs)
 
 
@@ -58,16 +64,16 @@ class RoomDetailView(DetailView):  # 사실상 SeatListView죠?
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['seats'] = []
+        context["seats"] = []
 
-        for i, seat in enumerate(context['object'].seat_set.all()):
-            if i % context['object'].row == 0:
-                context['seats'].append(False)
-            context['seats'].append(seat)
-        room = context['object']
-        seats = context['object'].seat_set.all()
-        n = (room.row - seats.count() % room.row)
-        context['seats'].extend(['empty'] * (n if n != room.row else 0))
+        for i, seat in enumerate(context["object"].seat_set.all()):
+            if i % context["object"].row == 0:
+                context["seats"].append(False)
+            context["seats"].append(seat)
+        room = context["object"]
+        seats = context["object"].seat_set.all()
+        n = room.row - seats.count() % room.row
+        context["seats"].extend(["empty"] * (n if n != room.row else 0))
         return context
 
     # def get_template_names(self) -> List[str]:
@@ -81,29 +87,37 @@ class RoomDetailView(DetailView):  # 사실상 SeatListView죠?
 #     def form_valid(self, form):
 #         return super().form_valid(form)
 
+
 class RoomUpdateView(UpdateView):
     model = Room
-    fields = ['notice', 'row', 'minimum', ]
+    fields = [
+        "notice",
+        "row",
+        "minimum",
+    ]
 
 
 class SeatBanlistUpdateView(UpdateView):
     model = Seat
     form_class = BanForm
-    template_name = 'point/seat_ban_form.html'
+    template_name = "point/seat_ban_form.html"
 
     def get_success_url(self):
-        return reverse('seat_detail', kwargs={'pk': self.object.id})
+        return reverse("seat_detail", kwargs={"pk": self.object.id})
+
 
 class SeatOwnerUpdateView(UpdateView):
     model = Seat
-    fields = ['owner', ]
+    fields = [
+        "owner",
+    ]
 
     def get_success_url(self):
-        return reverse('seat_detail', kwargs={'pk': self.object.id})
+        return reverse("seat_detail", kwargs={"pk": self.object.id})
 
     def form_valid(self, form):
         self.object = form.save(commit=False)
-        self.object.status = 'u'
+        self.object.status = "u"
         self.object.save()
         return super(edit.ModelFormMixin, self).form_valid(form)
 
@@ -113,15 +127,19 @@ class SeatDetailView(DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        seat = context['object']
-        context['logs'] = Log.objects.filter(obj_name='seat', obj_id=seat.id)
+        seat = context["object"]
+        context["logs"] = Log.objects.filter(obj_name="seat", obj_id=seat.id)
 
         if not self.request.user.is_staff:
             try:
-                context['log'] = Log.objects.get(obj_name='seat', obj_id=seat.id, canceled=False,
-                                                 log_student=self.request.user.student)
+                context["log"] = Log.objects.get(
+                    obj_name="seat",
+                    obj_id=seat.id,
+                    canceled=False,
+                    log_student=self.request.user.student,
+                )
             except:
-                context['log'] = None
+                context["log"] = None
         return context
 
 
@@ -135,113 +153,112 @@ class PresetDetailView(DetailView):
 
 class PresetCreateView(CreateView):
     model = Preset
-    fields = ['name', 'point']
+    fields = ["name", "point"]
 
     def get_success_url(self) -> str:
-        if self.request.GET.get('next', False):
-            return self.request.GET['next']
-        return resolve_url('preset_list')
+        if self.request.GET.get("next", False):
+            return self.request.GET["next"]
+        return resolve_url("preset_list")
 
 
 class PresetUpdateView(UpdateView):
     model = Preset
-    fields = ['name', 'point']
+    fields = ["name", "point"]
 
     def get_success_url(self) -> str:
-        return resolve_url('preset_list')
+        return resolve_url("preset_list")
 
 
 class PresetDeleteView(DeleteView):
     model = Preset
 
     def get_success_url(self) -> str:
-        return resolve_url('preset_list')
+        return resolve_url("preset_list")
 
 
 class LogArchiveView(ArchiveIndexView):
     model = Log
-    date_field = 'created_date'
-    template_name = 'point/archive/log_archive.html'
+    date_field = "created_date"
+    template_name = "point/archive/log_archive.html"
     allow_empty = True
-    queryset = Log.objects.filter(status='t').all()
+    queryset = Log.objects.filter(status="t").all()
 
 
 class LogYearArchiveView(YearArchiveView):
     model = Log
-    date_field = 'created_date'
-    template_name = 'point/archive/log_archive_year.html'
+    date_field = "created_date"
+    template_name = "point/archive/log_archive_year.html"
     make_object_list = True
     allow_empty = True
 
 
 class LogMonthArchiveView(MonthArchiveView):
     model = Log
-    date_field = 'created_date'
-    template_name = 'point/archive/log_archive_month.html'
+    date_field = "created_date"
+    template_name = "point/archive/log_archive_month.html"
     allow_empty = True
 
 
 class LogDayArchiveView(DayArchiveView):
     model = Log
-    date_field = 'created_date'
-    template_name = 'point/archive/log_archive_day.html'
+    date_field = "created_date"
+    template_name = "point/archive/log_archive_day.html"
     allow_empty = True
 
 
 class LogTodayArchiveView(TodayArchiveView):
     model = Log
-    date_field = 'created_date'
-    template_name = 'point/archive/log_archive_day.html'
+    date_field = "created_date"
+    template_name = "point/archive/log_archive_day.html"
     allow_empty = True
 
 
 @login_required
 def create_room(request):
-    if (not Room.objects.filter(status='a')) and request.user.is_staff:  # 열려있는 교실이 없고 선생님이면.
-        if request.method == 'POST':
+    if (
+        not Room.objects.filter(status="a")
+    ) and request.user.is_staff:  # 열려있는 교실이 없고 선생님이면.
+        if request.method == "POST":
             room = Room.objects.create(
-                row=request.POST['row'],
-                minimum=request.POST['minimum']
+                row=request.POST["row"], minimum=request.POST["minimum"]
             )
 
-            for i in range(int(request.POST['num'])):
-                Seat.objects.create(
-                    room=room,
-                    num=i + 1
-                )
+            for i in range(int(request.POST["num"])):
+                Seat.objects.create(room=room, num=i + 1)
 
-            return redirect('room_detail', pk=Room.objects.get(status='a').id)
-        return render(request, 'room_create.html')
-    return HttpResponseNotFound('<h1>Page not found</h1>')
+            return redirect("room_detail", pk=Room.objects.get(status="a").id)
+        return render(request, "room_create.html")
+    return HttpResponseNotFound("<h1>Page not found</h1>")
 
 
 @login_required
 def create_students(request):
     if not request.user.is_staff:
-        return HttpResponseNotFound('<h1>Page not found</h1>')
-    if request.method == 'POST':
+        return HttpResponseNotFound("<h1>Page not found</h1>")
+    if request.method == "POST":
         context = dict()
-        context['passwords'] = []
+        context["passwords"] = []
         n = max(User.objects.count(), 1)  # 1
         import random
-        for i in range(int(request.POST['number'])):
+
+        for i in range(int(request.POST["number"])):
             # password = int(random.random()*100000000)
             password = 123123
-            username = f'student{i + n}'
+            username = f"student{i + n}"
             user = User.objects.create_user(
                 username,
-                email=username + '@school.com',
-                password=f'{password}',
-                first_name='Student',
-                last_name='Student'
+                email=username + "@school.com",
+                password=f"{password}",
+                first_name="Student",
+                last_name="Student",
             )
             student = Student.objects.create(
                 user=user,
                 name=username,
             )
-            context['passwords'].append((student.id, f'{password}'))
-        return render(request, 'student_create_complete.html', context=context)
-    return render(request, 'student_create.html')
+            context["passwords"].append((student.id, f"{password}"))
+        return render(request, "student_create_complete.html", context=context)
+    return render(request, "student_create.html")
 
 
 @login_required
@@ -249,49 +266,55 @@ def auction(request, pk):
     seat = Seat.objects.get(id=pk)
     room = seat.room
     # 선생님이 Owner를 지정할 수 있게 됨에 따라 추가
-    if request.user.student.seat_set.filter(room=room) or seat.room.status == 'u' or seat.owner:
-        return redirect('home')
-    if request.method == 'POST':
+    if (
+        request.user.student.seat_set.filter(room=room)
+        or seat.room.status == "u"
+        or seat.owner
+    ):
+        return redirect("home")
+    if request.method == "POST":
         student = request.user.student
         # 해당 좌석에 이미 입찰한 적이 있는가?
         if not student in seat.ban_list.all():
-            if not Log.objects.filter(obj_name='seat', obj_id=seat.id, log_student=student, canceled=False):
+            if not Log.objects.filter(
+                obj_name="seat", obj_id=seat.id, log_student=student, canceled=False
+            ):
                 post = request.POST
 
-                student.point -= int(post['point'])
+                student.point -= int(post["point"])
                 student.save()
 
                 log = Log.objects.create(
-                    status='u',
-                    obj_name='seat',
+                    status="u",
+                    obj_name="seat",
                     obj_id=pk,
                     log_student=student,
-                    point=int(post['point']),
-                    reason=f'{seat.num}번 좌석'
+                    point=int(post["point"]),
+                    reason=f"{seat.num}번 좌석",
                 )
-    return redirect('room_now')
+    return redirect("room_now")
 
 
 @login_required
 def point_change(request, pk):
     student = Student.objects.get(id=pk)
-    if request.user.is_staff and request.method == 'POST':
+    if request.user.is_staff and request.method == "POST":
         post = request.POST
 
-        student.point += int(post['point'])
+        student.point += int(post["point"])
         student.save()
 
-        log = Log.objects.create(
-            status='t',
-            obj_name=post.get('name', 'teacher'),
-            obj_id=int(post.get('id', '0')),
-            point=int(post['point']),
+        Log.objects.create(
+            status="t",
+            obj_name=post.get("name", "teacher"),
+            obj_id=int(post.get("id", "0")),
+            point=int(post["point"]),
             log_student=student,
-            reason=post.get('reason', '')
+            reason=post.get("reason", ""),
         )
-        messages.success(request, 'Profile details updated.')
+        messages.success(request, "Profile details updated.")
         return HttpResponseRedirect(student.get_absolute_url())
-    return HttpResponseNotFound('<h1>Page not found</h1>')
+    return HttpResponseNotFound("<h1>Page not found</h1>")
 
 
 @login_required
@@ -303,25 +326,25 @@ def point_preset(request, student_id, preset_id):
         student.point += preset.point
         student.save()
 
-        log = Log.objects.create(
-            status='t',
-            obj_name='preset',
+        Log.objects.create(
+            status="t",
+            obj_name="preset",
             obj_id=preset_id,
             point=preset.point,
             log_student=student,
             reason=preset.name,
         )
-        messages.success(request, 'Profile details updated.')
+        messages.success(request, "Profile details updated.")
         return HttpResponseRedirect(student.get_absolute_url())
 
-    return HttpResponseNotFound('<h1>Page not found</h1>')
+    return HttpResponseNotFound("<h1>Page not found</h1>")
 
 
 @login_required
 def cancel(request, pk):  # 로그를 cancel 하려면 로그의 id를 알아야할텐데.
     log = Log.objects.get(id=pk)
     if request.user.is_staff or request.user.student == log.log_student:
-        if log.status == 'u' and (not log.canceled):
+        if log.status == "u" and (not log.canceled):
             log.canceled = True
             log.save()
 
@@ -330,14 +353,14 @@ def cancel(request, pk):  # 로그를 cancel 하려면 로그의 id를 알아야
             student.save()
 
             Log.objects.create(
-                status='c',
-                obj_name='log',
+                status="c",
+                obj_name="log",
                 log_student=student,
                 cancel_log=log,
                 point=log.point,
-                reason=f'{log.reason} 취소'
+                reason=f"{log.reason} 취소",
             )
-        if log.status == 't' and (not log.canceled):
+        if log.status == "t" and (not log.canceled):
             log.canceled = True
             log.save()
 
@@ -346,56 +369,67 @@ def cancel(request, pk):  # 로그를 cancel 하려면 로그의 id를 알아야
             student.save()
 
             Log.objects.create(
-                status='c',
-                obj_name='log',
+                status="c",
+                obj_name="log",
                 log_student=student,
                 cancel_log=log,
                 point=-log.point,
-                reason=f'{log.reason} 취소'
+                reason=f"{log.reason} 취소",
             )
-    if 'next' in request.GET:
-        return redirect(request.GET['next'])
-    return redirect('room_now')
+    if "next" in request.GET:
+        return redirect(request.GET["next"])
+    return redirect("room_now")
 
 
 @login_required
 def close_confirm(request):
     if request.user.is_staff:
         context = dict()
-        if Room.objects.filter(status='a'):
-            room = Room.objects.get(status='a')
+        if Room.objects.filter(status="a"):
+            room = Room.objects.get(status="a")
         else:
-            return HttpResponseNotFound('<h1>열려있는 교실이 없어요</h1>')
-        seats = Seat.objects.filter(room=room).values_list('id', flat=True)
-        context['seats'] = []
+            return HttpResponseNotFound("<h1>열려있는 교실이 없어요</h1>")
+        seats = Seat.objects.filter(room=room).values_list("id", flat=True)
+        context["seats"] = []
         for s in Seat.objects.filter(room=room):
-            if s.status == 'u':
+            if s.status == "u":
                 if not s.owner:
-                    context['seats'].append(s)
-        '''
+                    context["seats"].append(s)
+        """
         미달인 학생 - 입찰한 좌석 수.
-        '''
+        """
 
-        context['object_list'] = [(student, Log.objects.filter(obj_name='seat', obj_id__in=seats, log_student=student,
-                                                               canceled=False).count()) for student in
-                                  Student.objects.all()]
-        context['room'] = room
-        return render(request, 'close_confirm.html', context=context)
-    return HttpResponseNotFound('<h1>Page not found</h1>')
+        context["object_list"] = [
+            (
+                student,
+                Log.objects.filter(
+                    obj_name="seat",
+                    obj_id__in=seats,
+                    log_student=student,
+                    canceled=False,
+                ).count(),
+            )
+            for student in Student.objects.all()
+        ]
+        context["room"] = room
+        return render(request, "close_confirm.html", context=context)
+    return HttpResponseNotFound("<h1>Page not found</h1>")
 
 
 @login_required
 def close_room(request):
     if not request.user.is_staff:
-        return HttpResponseNotFound('<h1>Page not found</h1>')
-    room = Room.objects.get(status='a')
-    seats = Seat.objects.filter(room=room, status='a').values_list('id', flat=True)
-    logs = Log.objects.filter(obj_name='seat', obj_id__in=seats, canceled=False).order_by('-point', 'created_date')
+        return HttpResponseNotFound("<h1>Page not found</h1>")
+    room = Room.objects.get(status="a")
+    seats = Seat.objects.filter(room=room, status="a").values_list("id", flat=True)
+    logs = Log.objects.filter(
+        obj_name="seat", obj_id__in=seats, canceled=False
+    ).order_by("-point", "created_date")
     has = []
     for log in logs:
         seat = Seat.objects.get(id=log.obj_id)
         student = log.log_student
-        if (seat.status == 'u') or (student in has):
+        if (seat.status == "u") or (student in has):
             log.canceled = True
             log.save()
 
@@ -403,74 +437,75 @@ def close_room(request):
             student.save()
 
             Log.objects.create(
-                status='c',
-                obj_name='log',
+                status="c",
+                obj_name="log",
                 log_student=student,
                 cancel_log=log,
                 point=log.point,
-                reason=f'{log.reason} 유찰됨'
+                reason=f"{log.reason} 유찰됨",
             )
         else:
-            seat.status = 'u'
+            seat.status = "u"
             seat.owner = student
             seat.save()
             has.append(student)
 
     import random
-    students = list(Student.objects.filter(status='a').all())
-    seats = list(Seat.objects.filter(room=room, status='a', owner__isnull=True))
+
+    students = list(Student.objects.filter(status="a").all())
+    seats = list(Seat.objects.filter(room=room, status="a", owner__isnull=True))
     random.shuffle(seats)
 
     for seat in seats:
         if students:
-            while seat.status == 'a':
+            while seat.status == "a":
                 if students:
                     std = students.pop()
                 else:
                     break
                 if std in has:
                     continue
-                seat.status = 'u'
+                seat.status = "u"
                 seat.owner = std
                 seat.save()
         else:
             break
-    room.status = 'u'
+    room.status = "u"
     room.save()
-    return redirect('room_now')
+    return redirect("room_now")
 
 
 @login_required
 def room_now(request):
     if Room.objects.count():
         context = dict()
-        context['object'] = Room.objects.order_by('-created_date').first()
-        context['seats'] = []
+        context["object"] = Room.objects.order_by("-created_date").first()
+        context["seats"] = []
 
-        for i, seat in enumerate(context['object'].seat_set.all()):
-            if i % context['object'].row == 0:
-                context['seats'].append(False)
-            context['seats'].append(seat)
-        room = context['object']
-        seats = context['object'].seat_set.all()
-        n = (room.row - seats.count() % room.row)
-        context['seats'].extend(['empty'] * (n if n != room.row else 0))
+        for i, seat in enumerate(context["object"].seat_set.all()):
+            if i % context["object"].row == 0:
+                context["seats"].append(False)
+            context["seats"].append(seat)
+        room = context["object"]
+        seats = context["object"].seat_set.all()
+        n = room.row - seats.count() % room.row
+        context["seats"].extend(["empty"] * (n if n != room.row else 0))
 
-        return render(request, 'point/room_detail.html', context=context)
+        return render(request, "point/room_detail.html", context=context)
     else:
         if request.user.is_staff:
-            return redirect('create_room')
+            return redirect("create_room")
         else:
-            return HttpResponseNotFound('<h1>Page not found</h1>')
+            return HttpResponseNotFound("<h1>Page not found</h1>")
 
 
 @login_required
 def checkbox_test(request):  # 보이는 함수랑 form처리하는 함수는 따로 만들것.
     if request.user.is_staff:
         context = dict()
-        context['object_list'] = Student.objects.all()
+        context["object_list"] = Student.objects.all()
 
-        return render(request, 'std_list.html', context=context)
+        return render(request, "std_list.html", context=context)
 
 
 @login_required
@@ -479,26 +514,26 @@ def checkbox_point(request):
     # print(request.POST.keys())
     # print(request.POST.getlist('id[]'))
     if request.user.is_staff:
-        for pk in request.POST.getlist('id[]'):
+        for pk in request.POST.getlist("id[]"):
             student = Student.objects.get(id=pk)
             post = request.POST
 
-            student.point += int(post['point'])
+            student.point += int(post["point"])
             student.save()
 
             log = Log.objects.create(
-                status='t',
-                obj_name=post.get('name', 'teacher'),
-                obj_id=int(post.get('id', '0')),
-                point=int(post['point']),
+                status="t",
+                obj_name=post.get("name", "teacher"),
+                obj_id=int(post.get("id", "0")),
+                point=int(post["point"]),
                 log_student=student,
-                reason=post.get('reason', '')
+                reason=post.get("reason", ""),
             )
-        if bool(request.POST.getlist('id[]')):
-            messages.success(request, 'Profile details updated.')
+        if bool(request.POST.getlist("id[]")):
+            messages.success(request, "Profile details updated.")
         else:
-            messages.error(request, 'No students are selected.')
-        return redirect('test')
+            messages.error(request, "No students are selected.")
+        return redirect("test")
 
 
 @login_required
@@ -506,25 +541,30 @@ def changer(request):
     # if request.is_ajax():
     #     print(request.POST['pk'])
     if request.user.is_staff:
-        student = Student.objects.get(id=request.POST['pk'])
-        context = {'object': student}
-        context['logs'] = Log.objects.filter(log_student=context['object']).order_by('-created_date').all()
-        context['charges'] = Charge.objects.filter(student=context['object']).all()
-        context['presets'] = Preset.objects.all()
-        return render(request, 'std_view.html', context=context)
+        student = Student.objects.get(id=request.POST["pk"])
+        context = {"object": student}
+        context["logs"] = (
+            Log.objects.filter(log_student=context["object"])
+            .order_by("-created_date")
+            .all()
+        )
+        context["charges"] = Charge.objects.filter(student=context["object"]).all()
+        context["presets"] = Preset.objects.all()
+        return render(request, "std_view.html", context=context)
 
 
 def change_status(request, pk):
     if request.user.is_staff:
         seat = Seat.objects.get(id=pk)
-        if seat.status == 'u':
-            seat.status = 'a'
+        if seat.status == "u":
+            seat.status = "a"
         else:
-            seat.status = 'u'
+            seat.status = "u"
         if seat.owner:  # owner가 있다면
-            seat.status = 'u'
+            seat.status = "u"
         seat.save()
-    return redirect(reverse('seat_detail', kwargs={'pk': pk}))
+    return redirect(reverse("seat_detail", kwargs={"pk": pk}))
+
 
 # def set_owner(request, pk):
 #     if request.user.is_staff:
@@ -533,12 +573,13 @@ def change_status(request, pk):
 #             request
 # updateview 쓰는게 나을듯
 
+
 def owner_delete(request, pk):
     if request.user.is_staff:
         seat = Seat.objects.get(id=pk)
         if seat.owner:
             seat.owner = None
-            seat.status = 'a'
+            seat.status = "a"
             seat.save()
 
-    return redirect(reverse('seat_detail', kwargs={'pk': pk}))
+    return redirect(reverse("seat_detail", kwargs={"pk": pk}))
