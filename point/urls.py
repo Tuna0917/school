@@ -27,7 +27,7 @@ urlpatterns += [
         name="point_preset",
     ),
     path("students/create", create_students, name="create_students"),
-    path("log/<uuid:pk>/cancle", cancel, name="cancel"),
+    path("log/<uuid:pk>/cancel", cancel, name="cancel"),
 ]
 
 # 교실 관련

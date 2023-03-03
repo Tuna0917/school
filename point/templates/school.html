@@ -55,12 +55,12 @@
 
 
                                 <li class="nav-item">
-                                    <a class="nav-link active" href="{% url 'test' %}">Student View</a>
+                                    <a class="nav-link active" href="{% url 'test' %}">학생 관리</a>
                                 </li>
 
 
                                 <li class="nav-item dropdown">
-                                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Create/Close</a>
+                                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">작업하기</a>
 
                                     <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
                                         <li><a class="dropdown-item" href="{% url 'create_students' %}">학생 만들기/추가하기</a></li>
@@ -78,7 +78,7 @@
                                         <li><a class="dropdown-item" href="{% url 'student_list' %}">학생 목록</a></li>
                                         <li><a class="dropdown-item" href="{% url 'preset_list' %}">프리셋 목록</a></li>
                                         <li><a class="dropdown-item" href="{% url 'room_list' %}">교실 기록</a></li>
-                                        <li><a class="dropdown-item" href="{% url 'log_archive' %}">로그 기록</a></li>
+                                        <li><a class="dropdown-item" href="{% url 'log_archive' %}">학생 활동 내역</a></li>
                                     </ul>
 
                                 </li>
@@ -91,14 +91,14 @@
                                 <li class="nav-item dropdown mx-1">
                                     {% if user.is_active %}
                                     <a class="nav-link dropdown-toggle" href="" id="navbarScrollingDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                        <i class="fas fa-user"></i>&ensp;{{user.student.name}}{% if user.is_staff %} Teacher {% endif %}&ensp;
+                                        <i class="fas fa-user"></i>&ensp;{{user.student.name}}{% if user.is_staff %} 선생님 {% endif %}&ensp;
                                     </a>
 
                                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarScrollingDropdown">
                                         {% if not user.is_staff %}
                                         <li><a class="dropdown-item" href="{{ user.student.get_absolute_url }}">포인트 : {{user.student.point}}</a></li>
                                         {% else %}
-                                        <li><a class="dropdown-item" href="{% url 'admin:index' %}">Admin</a></li>
+                                        <li><a class="dropdown-item" href="{% url 'admin:index' %}">관리자 페이지</a></li>
                                         {% endif %}
                                         <li><hr class="dropdown-divider"></li>
 
