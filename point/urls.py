@@ -7,8 +7,10 @@ urlpatterns = [
     path("", room_now, name="home"),
     # path('', HomeTemplateView.as_view(), name='home'),
     path("student/view", checkbox_test, name="test"),
-    path("tptp", checkbox_point, name="tptp"),
-    path("ccc", changer, name="ccc"),
+    path("bulk-update-point", checkbox_point, name="bulk-update-point"),
+    path("advanced-student-view", changer, name="advanced-student-view"),
+    path("check-reset", check_reset, name="check_reset"),
+    path("reset", reset, name="reset"),
 ]
 
 # 학생 관련

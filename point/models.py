@@ -1,4 +1,4 @@
-from django.db import models
+from django.db import models, connection
 from django.db.models.fields.related import ForeignKey
 from django.shortcuts import resolve_url
 from django.contrib.auth.models import User
@@ -32,6 +32,14 @@ class Student(models.Model):
         """
         return resolve_url("student_detail", self.id)
 
+    @classmethod
+    def truncate(cls):
+        with connection.cursor() as cursor:
+            cursor.execute(
+                f"UPDATE SQLITE_SEQUENCE SET seq = 0 WHERE name = '{cls._meta.db_table}'"
+            )
+            cursor.execute("DELETE FROM auth_user WHERE is_superuser = 0")
+
 
 class Log(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -52,6 +60,13 @@ class Log(models.Model):
     class Meta:
         ordering = ["created_date"]
 
+    @classmethod
+    def truncate(cls):
+        with connection.cursor() as cursor:
+            cursor.execute(
+                f"UPDATE SQLITE_SEQUENCE SET seq = 0 WHERE name = '{cls._meta.db_table}'"
+            )
+
 
 class Room(models.Model):
     created_date = models.DateTimeField(auto_now_add=True)
@@ -64,6 +79,13 @@ class Room(models.Model):
 
     def get_absolute_url(self):
         return resolve_url("room_detail", self.id)
+
+    @classmethod
+    def truncate(cls):
+        with connection.cursor() as cursor:
+            cursor.execute(
+                f"UPDATE SQLITE_SEQUENCE SET seq = 0 WHERE name = '{cls._meta.db_table}'"
+            )
 
 
 class Seat(models.Model):
@@ -82,6 +104,13 @@ class Seat(models.Model):
     def get_absolute_url(self):
         return resolve_url("seat_detail", self.id)
 
+    @classmethod
+    def truncate(cls):
+        with connection.cursor() as cursor:
+            cursor.execute(
+                f"UPDATE SQLITE_SEQUENCE SET seq = 0 WHERE name = '{cls._meta.db_table}'"
+            )
+
 
 class Preset(models.Model):
     created_date = models.DateTimeField(auto_now_add=True)
@@ -96,3 +125,10 @@ class Charge(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
     reason = models.TextField()
     submit = models.BooleanField(default=False)
+
+    @classmethod
+    def truncate(cls):
+        with connection.cursor() as cursor:
+            cursor.execute(
+                f"UPDATE SQLITE_SEQUENCE SET seq = 0 WHERE name = '{cls._meta.db_table}'"
+            )

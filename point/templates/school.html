@@ -16,9 +16,9 @@
         {% block extra-style %}{% endblock %}
         <!-- 왜 작동을 안하지-->
         <style>
-          .font-weight-bold{
+        .font-weight-bold{
             font-weight: bold;
-          }
+        }
 
         .cancel {
             text-decoration:line-through;
@@ -44,7 +44,7 @@
                         <div class="collapse navbar-collapse" id="navbarSupportedContent">
                             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                                 <li class="nav-item">
-                                    <a class="nav-link active" aria-current="page" href="{% url 'room_now' %}">Home</a>
+                                    <a class="nav-link active" aria-current="page" href="{% url 'room_now' %}">홈으로</a>
                                 </li>
                             {% if user.student %}
                                 <li class="nav-item">
@@ -60,12 +60,14 @@
 
 
                                 <li class="nav-item dropdown">
-                                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">작업하기</a>
+                                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">학생/좌석 생성</a>
 
                                     <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
                                         <li><a class="dropdown-item" href="{% url 'create_students' %}">학생 만들기/추가하기</a></li>
                                         <li><a class="dropdown-item" href="{% url 'create_room' %}">자리 배정 새로 시작하기</a></li>
                                         <li><a class="dropdown-item" href="{% url 'close_confirm' %}">자리 배정 끝내기</a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item" href="{% url 'check_reset' %}">학년 초기화</a>
                                     </ul>
 
                                 </li>

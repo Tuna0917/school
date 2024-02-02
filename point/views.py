@@ -1,6 +1,5 @@
 from django.shortcuts import render, redirect, resolve_url
 from django.urls import reverse
-from django.urls import reverse_lazy
 from .models import *
 from django.views.generic import *
 from django.views.generic import edit
@@ -10,6 +9,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.decorators.http import require_POST
 from .forms import BanForm
+
 
 # Create your views here.
 class HomeTemplateView(LoginRequiredMixin, TemplateView):
@@ -239,7 +239,7 @@ def create_students(request):
         context = dict()
         context["passwords"] = []
         n = max(User.objects.count(), 1)  # 1
-        import random
+        # import random
 
         for i in range(int(request.POST["number"])):
             # password = int(random.random()*100000000)
@@ -583,3 +583,25 @@ def owner_delete(request, pk):
             seat.save()
 
     return redirect(reverse("seat_detail", kwargs={"pk": pk}))
+
+
+def check_reset(request):
+    if request.user.is_staff:
+        return render(request, "reset_confirm.html")
+    return redirect("home")
+
+
+def reset(request):
+    if request.user.is_staff:
+        User.objects.filter(is_superuser=0).delete()
+        Student.objects.all().delete()
+        Log.objects.all().delete()
+        Room.objects.all().delete()
+        Seat.objects.all().delete()
+        Charge.objects.all().delete()
+        Student.truncate()
+        Log.truncate()
+        Room.truncate()
+        Seat.truncate()
+        Charge.truncate()
+    return redirect("home")

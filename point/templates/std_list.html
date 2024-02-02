@@ -30,7 +30,7 @@
 {% block teacher %}
     <div class="container">
     {% include 'point/includes/messages.html' %}
-        <form method="POST" action="{% url 'tptp' %}">{% csrf_token %}
+        <form method="POST" action="{% url 'bulk-update-point' %}">{% csrf_token %}
             <div class="row g-5">
                 <div class="col-md-4 col-lg-3 order-md-first">
                     <div class="box scroll-y">
@@ -70,7 +70,7 @@
             const pk = $(this).attr('name')
             $.ajax({
                 type: "POST",
-                url:"{% url 'ccc'  %}", // list url을 불러옴
+                url:"{% url 'advanced-student-view'  %}", // list url을 불러옴
                 data: {'pk':pk,'csrfmiddlewaretoken': '{{ csrf_token }}', },
                 dataType: 'html', // list의 형태는 html
                 success: function(data){ // 성공했을 때 일단 good을 alert로 띄운다.
