@@ -8,11 +8,12 @@ import random
 
 from django.contrib.auth.models import User
 from django.db import IntegrityError, transaction
+from django.db.models import Sum
 from django.test import TestCase
 from django.urls import reverse
 
 from . import services
-from .models import Log, Preset, Room, Seat, Student
+from .models import Bid, PointLog, Preset, Room, Seat, Student
 from .services import DomainError
 
 PW = "test-pw-12345"
@@ -20,7 +21,13 @@ PW = "test-pw-12345"
 
 def make_student(name, point=100, username=None, status=Student.ATTENDING):
     user = User.objects.create_user(username=username or name, password=PW)
-    return Student.objects.create(user=user, name=name, point=point, status=status)
+    student = Student.objects.create(
+        user=user, name=name, point=point, status=status
+    )
+    # 실제 계정 생성 경로와 똑같이 최초 지급분을 원장에 남긴다. 그러지 않으면
+    # 원장 항등식 테스트가 테스트 헬퍼 때문에 실패한다.
+    services.record_initial_point(student)
+    return student
 
 
 def make_teacher(username="teacher"):
@@ -51,7 +58,9 @@ class PlaceBidTests(TestCase):
 
         self.student.refresh_from_db()
         self.assertEqual(self.student.point, 100)
-        self.assertFalse(Log.objects.exists())
+        self.assertFalse(Bid.objects.exists())
+        # 원장에도 차감 기록이 남지 않아야 한다.
+        self.assertFalse(PointLog.objects.filter(kind=PointLog.BID).exists())
 
     def test_zero_or_negative_bid_is_rejected(self):
         """음수 입찰은 차감이 아니라 지급이 되는 포인트 증식 버그였다."""
@@ -100,13 +109,13 @@ class PlaceBidTests(TestCase):
         services.place_bid(self.student, self.seat, 30)
         with self.assertRaises(IntegrityError):
             with transaction.atomic():
-                Log.objects.create(
-                    status=Log.USE,
-                    obj_name=services.SEAT,
-                    obj_id=self.seat.id,
-                    log_student=self.student,
-                    point=30,
-                )
+                Bid.objects.create(seat=self.seat, student=self.student, point=30)
+
+    def test_zero_point_bid_blocked_at_db_level(self):
+        """CheckConstraint가 0포인트 입찰을 막는다."""
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                Bid.objects.create(seat=self.seat, student=self.student, point=0)
 
 
 class CancelBidTests(TestCase):
@@ -152,7 +161,17 @@ class AdjustPointTests(TestCase):
 
         self.student.refresh_from_db()
         self.assertEqual(self.student.point, 150)
-        self.assertTrue(Log.objects.filter(reason="숙제 보상").exists())
+        entry = PointLog.objects.get(reason="숙제 보상")
+        self.assertEqual(entry.kind, PointLog.TEACHER)
+        self.assertEqual(entry.amount, 50)
+
+    def test_deduction_is_recorded_as_a_negative_amount(self):
+        """예전 Log는 차감도 양수로 저장해서, 기록만 보고는 지급인지 차감인지
+        구분할 수 없었다. amount의 부호가 그 자체로 방향을 나타내야 한다."""
+        services.adjust_point(self.student, -30, reason="지각")
+
+        entry = PointLog.objects.get(reason="지각")
+        self.assertEqual(entry.amount, -30)
 
     def test_adjust_cannot_push_balance_below_zero(self):
         with self.assertRaises(DomainError):
@@ -160,6 +179,102 @@ class AdjustPointTests(TestCase):
 
         self.student.refresh_from_db()
         self.assertEqual(self.student.point, 100)
+
+
+# ---------------------------------------------------------------- 원장(ledger)
+
+
+class LedgerInvariantTests(TestCase):
+    """`sum(PointLog.amount) == Student.point`가 어떤 경로로도 깨지지 않는지.
+
+    `Student.point`는 사실 원장 합계의 캐시다. 둘이 갈라지면 어느 쪽이 맞는지
+    알 수 없게 되고, 포인트가 새는 버그를 찾을 단서도 사라진다. 예전 Log
+    구조에서는 이런 검산이 불가능했다. 차감액이 양수로 저장돼 있어서 합계에
+    아무 의미가 없었기 때문이다.
+    """
+
+    def assertLedgerBalanced(self):
+        for student in Student.objects.all():
+            total = student.point_logs.aggregate(t=Sum("amount"))["t"] or 0
+            self.assertEqual(
+                total,
+                student.point,
+                f"{student.name}: 원장 합계 {total} != 잔액 {student.point}",
+            )
+
+    def test_ledger_balances_after_a_mix_of_operations(self):
+        room = services.open_room(row=2, minimum=10, seat_count=3)
+        seats = list(room.seat_set.all())
+        a = make_student("가", point=100, username="a")
+        b = make_student("나", point=100, username="b")
+
+        self.assertLedgerBalanced()  # 계정 생성 직후
+
+        services.adjust_point(a, 50, reason="숙제 보상")
+        services.adjust_point(b, -20, reason="지각")
+        self.assertLedgerBalanced()
+
+        bid_a = services.place_bid(a, seats[0], 80)
+        services.place_bid(b, seats[0], 30)
+        self.assertLedgerBalanced()
+
+        services.cancel_bid(bid_a)
+        self.assertLedgerBalanced()
+
+        services.place_bid(a, seats[1], 40)
+        services.close_room(room, rng=random.Random(0))
+        self.assertLedgerBalanced()  # 마감의 자동 환불까지 포함
+
+    def test_rejected_operations_leave_no_trace(self):
+        """실패한 요청이 원장에만 기록을 남기면 잔액과 영원히 어긋난다."""
+        room = services.open_room(row=2, minimum=10, seat_count=2)
+        student = make_student("김철수", point=100)
+
+        for call in (
+            lambda: services.place_bid(student, room.seat_set.first(), 500),
+            lambda: services.place_bid(student, room.seat_set.first(), 5),
+            lambda: services.adjust_point(student, -500, reason="과다 차감"),
+        ):
+            with self.assertRaises(DomainError):
+                call()
+
+        self.assertLedgerBalanced()
+        self.assertEqual(PointLog.objects.filter(student=student).count(), 1)
+
+
+class BidIntegrityTests(TestCase):
+    """예전 Log는 `obj_id`가 그냥 IntegerField였다."""
+
+    def setUp(self):
+        self.room = services.open_room(row=2, minimum=10, seat_count=2)
+        self.seat = self.room.seat_set.first()
+        self.student = make_student("김철수", point=100)
+
+    def test_deleting_a_seat_keeps_the_ledger_intact(self):
+        """좌석이 사라져도 원장은 남아야 한다.
+
+        원장이 CASCADE로 함께 지워지면 학생의 잔액을 설명할 수 없게 된다.
+        그래서 `PointLog.bid`는 SET_NULL이다.
+        """
+        services.place_bid(self.student, self.seat, 30)
+        self.seat.delete()
+
+        self.assertFalse(Bid.objects.exists())  # 입찰은 좌석과 함께 사라진다
+        entry = PointLog.objects.get(kind=PointLog.BID)
+        self.assertIsNone(entry.bid)
+        self.assertEqual(entry.amount, -30)
+
+        self.student.refresh_from_db()
+        total = self.student.point_logs.aggregate(t=Sum("amount"))["t"]
+        self.assertEqual(total, self.student.point)
+
+    def test_bid_reachable_from_seat_by_reverse_relation(self):
+        """실제 FK라서 `seat.bids`로 역참조할 수 있다.
+        예전에는 obj_name/obj_id를 문자열로 맞춰 조회해야 했다."""
+        services.place_bid(self.student, self.seat, 30)
+
+        self.assertEqual(self.seat.bids.count(), 1)
+        self.assertEqual(self.seat.bids.first().student, self.student)
 
 
 # ---------------------------------------------------------------- 배정 알고리즘
@@ -235,6 +350,24 @@ class CloseRoomTests(TestCase):
         self.assertEqual(seat.status, Seat.TAKEN)
         self.assertEqual(winner.point, 20)  # 낙찰가는 돌려받지 않는다
         self.assertEqual(loser.point, 100)  # 유찰은 전액 환불
+
+    def test_winning_bid_is_marked(self):
+        """마감 후에도 어떤 입찰이 자리를 가져갔는지 남아야 한다.
+        예전에는 좌석 주인만 남아서, 낙찰가를 알 방법이 없었다."""
+        winner = make_student("최고", point=100, username="winner")
+        loser = make_student("차순", point=100, username="loser")
+        seat = self.room.seat_set.first()
+
+        winning_bid = services.place_bid(winner, seat, 80)
+        losing_bid = services.place_bid(loser, seat, 20)
+
+        services.close_room(self.room, rng=random.Random(0))
+
+        winning_bid.refresh_from_db()
+        losing_bid.refresh_from_db()
+        self.assertTrue(winning_bid.won)
+        self.assertFalse(losing_bid.won)
+        self.assertTrue(losing_bid.canceled)
 
     def test_every_student_gets_exactly_one_seat(self):
         students = [

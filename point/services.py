@@ -10,6 +10,10 @@
 
 는 세 가지 규칙을 지킨다. 덕분에 동시에 들어온 두 요청이 같은 포인트를 두 번
 쓰는 lost update가 발생하지 않는다.
+
+또한 포인트가 움직일 때마다 `PointLog`를 남긴다. 어떤 경로로 바뀌든
+`sum(PointLog.amount) == Student.point`가 성립해야 하며, 이는 테스트로
+검증한다(`LedgerInvariantTests`).
 """
 
 import random
@@ -18,14 +22,27 @@ import secrets
 from django.contrib.auth.models import User
 from django.db import transaction
 
-from .models import Log, Room, Seat, Student
-
-SEAT = "seat"
-LOG = "log"
+from .models import Bid, PointLog, Room, Seat, Student
 
 
 class DomainError(Exception):
     """사용자에게 그대로 보여줘도 되는 규칙 위반."""
+
+
+def record_initial_point(student):
+    """계정 생성 시 기본 지급된 포인트를 원장에 남긴다.
+
+    `Student.point`의 기본값(100)은 아무 기록 없이 생기기 때문에, 이걸 남기지
+    않으면 이력을 다 더해도 잔액과 맞지 않아 원장을 검산에 쓸 수 없다.
+    """
+    if not student.point:
+        return None
+    return PointLog.objects.create(
+        student=student,
+        kind=PointLog.INITIAL,
+        amount=student.point,
+        reason="계정 생성 시 최초 지급.",
+    )
 
 
 def get_open_room():
@@ -45,18 +62,13 @@ def require_open_room():
 
 
 def active_bids(seat_ids):
-    """주어진 좌석들에 살아 있는(취소되지 않은) 입찰 로그."""
-    return Log.objects.filter(
-        obj_name=SEAT,
-        obj_id__in=list(seat_ids),
-        status=Log.USE,
-        canceled=False,
-    )
+    """주어진 좌석들에 살아 있는(취소되지 않은) 입찰."""
+    return Bid.objects.filter(seat_id__in=list(seat_ids), canceled=False)
 
 
 def bid_of(student, seat):
     """학생이 해당 좌석에 이미 걸어둔 입찰. 없으면 None."""
-    return active_bids([seat.id]).filter(log_student=student).first()
+    return Bid.objects.filter(seat=seat, student=student, canceled=False).first()
 
 
 @transaction.atomic
@@ -91,50 +103,48 @@ def place_bid(student, seat, amount, *, reason=None):
     locked.point -= amount
     locked.save(update_fields=["point", "modified_date"])
 
-    return Log.objects.create(
-        status=Log.USE,
-        obj_name=SEAT,
-        obj_id=seat.id,
-        log_student=locked,
-        point=amount,
+    bid = Bid.objects.create(seat=seat, student=locked, point=amount)
+    PointLog.objects.create(
+        student=locked,
+        kind=PointLog.BID,
+        amount=-amount,  # 차감이므로 음수
+        bid=bid,
         reason=reason or f"{seat.num}번 좌석에 입찰함.",
     )
+    return bid
 
 
 @transaction.atomic
-def cancel_bid(log, *, refund_reason=None):
+def cancel_bid(bid, *, refund_reason=None):
     """입찰을 취소하고 포인트를 되돌려준다.
 
-    `canceled` 플래그를 잠긴 행에서 다시 읽어 확인하므로, 취소 링크를 두 번
-    빠르게 눌러도 포인트가 두 번 환급되지 않는다.
+    `canceled`를 잠긴 행에서 다시 읽어 확인하므로, 취소 버튼을 두 번 빠르게
+    눌러도 포인트가 두 번 환급되지 않는다.
     """
-    log = Log.objects.select_for_update().get(pk=log.pk)
+    bid = Bid.objects.select_for_update().get(pk=bid.pk)
 
-    if log.status != Log.USE:
-        raise DomainError("입찰 기록만 취소할 수 있습니다.")
-    if log.canceled:
+    if bid.canceled:
         raise DomainError("이미 취소된 입찰입니다.")
 
-    student = Student.objects.select_for_update().get(pk=log.log_student_id)
+    student = Student.objects.select_for_update().get(pk=bid.student_id)
 
-    log.canceled = True
-    log.save(update_fields=["canceled", "modified_date"])
+    bid.canceled = True
+    bid.save(update_fields=["canceled", "modified_date"])
 
-    student.point += log.point
+    student.point += bid.point
     student.save(update_fields=["point", "modified_date"])
 
-    return Log.objects.create(
-        status=Log.TEACHER,
-        obj_name=LOG,
-        log_student=student,
-        cancel_log=log,
-        point=log.point,
+    return PointLog.objects.create(
+        student=student,
+        kind=PointLog.REFUND,
+        amount=bid.point,  # 환급이므로 양수
+        bid=bid,
         reason=refund_reason or "입찰 취소로 포인트를 돌려받음.",
     )
 
 
 @transaction.atomic
-def adjust_point(student, amount, *, reason="", obj_name="teacher", obj_id=0):
+def adjust_point(student, amount, *, reason=""):
     """선생님이 포인트를 지급/차감한다. 결과 잔액이 음수면 거부한다."""
     if amount == 0:
         raise DomainError("0포인트는 지급할 수 없습니다.")
@@ -148,12 +158,10 @@ def adjust_point(student, amount, *, reason="", obj_name="teacher", obj_id=0):
     locked.point += amount
     locked.save(update_fields=["point", "modified_date"])
 
-    return Log.objects.create(
-        status=Log.TEACHER,
-        obj_name=obj_name,
-        obj_id=obj_id,
-        log_student=locked,
-        point=amount,
+    return PointLog.objects.create(
+        student=locked,
+        kind=PointLog.TEACHER,
+        amount=amount,
         reason=reason,
     )
 
@@ -209,10 +217,12 @@ def close_room(room, *, rng=random):
         raise DomainError("이미 마감된 교실입니다.")
 
     seat_ids = list(room.seat_set.values_list("id", flat=True))
+    # 낙찰 우선순위(높은 포인트 → 먼저 낸 순)를 명시한다. Bid.Meta.ordering과
+    # 같지만, 여기서 순서가 틀리면 경매 결과가 조용히 어긋나므로 드러내 둔다.
     bids = list(
         active_bids(seat_ids)
         .order_by("-point", "created_date")
-        .values_list("id", "obj_id", "log_student_id")
+        .values_list("id", "seat_id", "student_id")
     )
     student_ids = list(
         Student.objects.filter(status=Student.ATTENDING).values_list("id", flat=True)
@@ -222,9 +232,12 @@ def close_room(room, *, rng=random):
 
     for bid_id in refunded:
         cancel_bid(
-            Log.objects.get(pk=bid_id),
+            Bid.objects.get(pk=bid_id),
             refund_reason="다른 좌석에 낙찰되어 이 입찰은 자동 취소됨.",
         )
+
+    # 낙찰된 입찰에 표시를 남겨, 마감 후에도 어떤 입찰이 자리를 가져갔는지 알 수 있다.
+    Bid.objects.filter(id__in=[bid_id for _, bid_id in won.values()]).update(won=True)
 
     owners = {seat_id: student for seat_id, (student, _) in won.items()}
     owners.update(random_assigned)
@@ -246,9 +259,7 @@ def open_room(*, row, minimum, seat_count, notice=""):
         raise DomainError("이미 열려 있는 교실이 있습니다. 먼저 마감해 주세요.")
 
     room = Room.objects.create(row=row, minimum=minimum, notice=notice)
-    Seat.objects.bulk_create(
-        [Seat(room=room, num=i + 1) for i in range(seat_count)]
-    )
+    Seat.objects.bulk_create([Seat(room=room, num=i + 1) for i in range(seat_count)])
     return room
 
 
@@ -256,7 +267,7 @@ def bid_counts_by_student(room):
     """마감 확인 화면용. (학생, 살아 있는 입찰 수) 리스트를 한 번의 쿼리로 만든다."""
     seat_ids = list(room.seat_set.values_list("id", flat=True))
     counts = {}
-    for student_id in active_bids(seat_ids).values_list("log_student_id", flat=True):
+    for student_id in active_bids(seat_ids).values_list("student_id", flat=True):
         counts[student_id] = counts.get(student_id, 0) + 1
     students = Student.objects.filter(status=Student.ATTENDING).order_by("name")
     return [(student, counts.get(student.id, 0)) for student in students]
@@ -284,6 +295,7 @@ def create_student_accounts(count, *, password_factory=None):
                 first_name="Student",
             )
             student = Student.objects.create(user=user, name=username)
+            record_initial_point(student)
             created.append((student, password))
     return created
 

@@ -30,7 +30,7 @@ from .mixins import (
     student_of,
     student_required,
 )
-from .models import Log, Preset, Room, Seat, Student
+from .models import Bid, PointLog, Preset, Room, Seat, Student
 
 # ---------------------------------------------------------------- 학생
 
@@ -50,8 +50,10 @@ class StudentDetailView(OwnerOrStaffMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         student = context["object"]
-        context["logs"] = Log.objects.filter(log_student=student).order_by(
-            "-created_date"
+        # select_related("bid__seat")로 원장 100줄을 훑으면서 좌석을 다시
+        # 조회하지 않게 한다 (N+1 방지).
+        context["logs"] = PointLog.objects.filter(student=student).select_related(
+            "bid__seat"
         )[:100]
         context["presets"] = Preset.objects.all()
         context["point_form"] = PointChangeForm()
@@ -89,7 +91,6 @@ def point_change(request, pk):
         student,
         form.cleaned_data["point"],
         reason=form.cleaned_data["reason"],
-        obj_name="teacher",
     )
     messages.success(request, f"{student.name}의 포인트를 변경했습니다.")
     return redirect(student.get_absolute_url())
@@ -152,16 +153,13 @@ class SeatDetailView(LoggedInMixin, DetailView):
 
         if is_staff(self.request.user) or room_closed:
             # 선생님은 항상, 학생은 마감 후에만 전체 입찰 내역을 본다.
-            context["logs"] = services.active_bids([seat.id]).select_related(
-                "log_student"
-            )
+            # 마감 전에 공개하면 남의 입찰가를 보고 1포인트만 더 얹을 수 있다.
+            context["bids"] = services.active_bids([seat.id]).select_related("student")
         else:
-            context["logs"] = []
+            context["bids"] = []
 
-        context["log"] = (
-            services.bid_of(student, seat) if student is not None else None
-        )
-        if student is not None and context["log"] is None and seat.is_biddable:
+        context["my_bid"] = services.bid_of(student, seat) if student else None
+        if student is not None and context["my_bid"] is None and seat.is_biddable:
             context["bid_form"] = BidForm(student=student, room=seat.room)
         return context
 
@@ -206,20 +204,17 @@ def cancel(request, pk):
     """입찰 취소(환불).
 
     반드시 POST여야 한다. GET을 허용하면 CSRF 토큰 없이 상태가 바뀌므로
-    `<img src="/log/.../cancel">` 한 줄로 남의 입찰을 취소시킬 수 있다.
+    `<img src="/bid/1/cancel">` 한 줄로 남의 입찰을 취소시킬 수 있다.
     """
-    log = get_object_or_404(Log.objects.select_related("log_student"), pk=pk)
+    bid = get_object_or_404(Bid.objects.select_related("student"), pk=pk)
     student = student_of(request.user)
 
     # 선생님이거나 본인의 입찰일 때만 취소 가능.
-    if not (is_staff(request.user) or log.log_student == student):
+    if not (is_staff(request.user) or bid.student == student):
         messages.error(request, "본인의 입찰만 취소할 수 있습니다.")
         return redirect("room_now")
-    if not log.is_bid:
-        messages.error(request, "입찰 기록만 취소할 수 있습니다.")
-        return redirect("room_now")
 
-    services.cancel_bid(log)
+    services.cancel_bid(bid)
     messages.success(request, "입찰을 취소하고 포인트를 돌려받았습니다.")
     return redirect(_safe_next(request) or "room_now")
 

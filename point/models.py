@@ -1,5 +1,3 @@
-import uuid
-
 from django.contrib.auth.models import User
 from django.db import models
 from django.db.models import Q
@@ -49,52 +47,6 @@ class Student(TimeStamped):
     def get_absolute_url(self):
         # template에서는 {%%}가 아니라 {{ }}로 호출해야 한다.
         return resolve_url("student_detail", self.id)
-
-
-class Log(TimeStamped):
-    USE = "u"  # 사용(입찰)
-    CANCEL = "c"  # 취소
-    TEACHER = "t"  # 선생님 지급/차감
-    STATUS = (
-        (USE, "사용"),
-        (CANCEL, "취소"),
-        (TEACHER, "선생님"),
-    )
-
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    status = models.CharField(max_length=1, choices=STATUS, default=TEACHER)
-    obj_name = models.CharField(max_length=32)
-    obj_id = models.IntegerField(null=True)
-    log_student = models.ForeignKey(Student, on_delete=models.CASCADE)
-    point = models.IntegerField()
-    canceled = models.BooleanField(default=False)  # 'u'의 경우 True로 바뀔 수 있음
-    cancel_log = models.ForeignKey(
-        "self", on_delete=models.CASCADE, null=True, blank=True
-    )  # 'c'의 경우
-    reason = models.TextField(blank=True)
-
-    class Meta:
-        ordering = ["created_date"]
-        indexes = [
-            # 좌석별 입찰 조회가 가장 잦은 쿼리다.
-            models.Index(fields=["obj_name", "obj_id", "canceled"]),
-            models.Index(fields=["log_student", "-created_date"]),
-        ]
-        constraints = [
-            # 한 학생이 같은 좌석에 살아 있는 입찰을 두 개 가질 수 없다.
-            models.UniqueConstraint(
-                fields=["obj_name", "obj_id", "log_student"],
-                condition=Q(canceled=False, status="u"),
-                name="one_active_bid_per_seat_per_student",
-            ),
-        ]
-
-    def __str__(self):
-        return f"{self.log_student} {self.point:+d}"
-
-    @property
-    def is_bid(self):
-        return self.status == self.USE and self.obj_name == "seat"
 
 
 class Room(TimeStamped):
@@ -162,6 +114,94 @@ class Seat(TimeStamped):
     @property
     def is_biddable(self):
         return self.status == self.OPEN and self.owner_id is None
+
+
+class Bid(TimeStamped):
+    """좌석 입찰.
+
+    예전에는 `Log(status='u', obj_name='seat', obj_id=<좌석 id>)`로 표현했다.
+    `obj_id`는 그냥 IntegerField였기 때문에
+
+      * 좌석을 지워도 로그가 존재하지 않는 좌석을 계속 가리켰고 (FK 제약 없음),
+      * 조회할 때마다 `obj_name='seat'`을 문자열로 맞춰야 했고,
+      * `seat.bids` 같은 역참조를 쓸 수 없어 N+1 쿼리가 나기 쉬웠다.
+
+    실제 ForeignKey를 쓰면 이 세 문제가 모두 사라진다.
+    """
+
+    seat = models.ForeignKey(Seat, on_delete=models.CASCADE, related_name="bids")
+    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name="bids")
+    point = models.PositiveIntegerField()
+    canceled = models.BooleanField(default=False)
+    won = models.BooleanField(default=False)  # 마감 시 낙찰됐는지
+
+    class Meta:
+        # 낙찰 우선순위: 높은 포인트 우선, 같으면 먼저 낸 쪽 우선.
+        # 경매 규칙을 모델에 박아두면 정렬을 빠뜨린 쿼리가 조용히 틀리지 않는다.
+        ordering = ["-point", "created_date"]
+        indexes = [
+            models.Index(fields=["seat", "canceled"]),
+            models.Index(fields=["student", "-created_date"]),
+        ]
+        constraints = [
+            # 한 학생이 같은 좌석에 살아 있는 입찰을 두 개 가질 수 없다.
+            models.UniqueConstraint(
+                fields=["seat", "student"],
+                condition=Q(canceled=False),
+                name="unique_active_bid_per_seat_student",
+            ),
+            models.CheckConstraint(check=Q(point__gte=1), name="bid_point_positive"),
+        ]
+
+    def __str__(self):
+        return f"{self.student} → {self.seat} ({self.point}p)"
+
+
+class PointLog(TimeStamped):
+    """포인트 원장(ledger). 모든 포인트 이동을 부호 있는 금액으로 남긴다.
+
+    예전 Log는 `point`가 항상 양수여서 지급인지 차감인지 알려면 `status`와
+    `obj_name`을 조합해 추측해야 했다. `amount`에 부호를 넣으면 한 학생의
+    이력을 그냥 더해서 잔액을 검산할 수 있다 — `sum(amount) == student.point`.
+    이 항등식은 테스트로 검증한다.
+    """
+
+    INITIAL = "i"  # 최초 지급분
+    BID = "b"  # 입찰로 차감
+    REFUND = "r"  # 입찰 취소로 환급
+    TEACHER = "t"  # 선생님 지급/차감
+    KIND = (
+        (INITIAL, "최초"),
+        (BID, "입찰"),
+        (REFUND, "환급"),
+        (TEACHER, "선생님"),
+    )
+
+    student = models.ForeignKey(
+        Student, on_delete=models.CASCADE, related_name="point_logs"
+    )
+    kind = models.CharField(max_length=1, choices=KIND, default=TEACHER)
+    amount = models.IntegerField(help_text="지급은 양수, 차감은 음수")
+    # 좌석이 지워져도 원장은 남아야 하므로 SET_NULL. 원장이 사라지면
+    # 학생 잔액을 설명할 수 없게 된다.
+    bid = models.ForeignKey(
+        Bid, on_delete=models.SET_NULL, null=True, blank=True, related_name="ledger"
+    )
+    reason = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ["-created_date"]
+        indexes = [
+            models.Index(fields=["student", "-created_date"]),
+        ]
+
+    def __str__(self):
+        return f"{self.student} {self.amount:+d}"
+
+    @property
+    def is_refundable_bid(self):
+        """이 기록이 아직 취소할 수 있는 입찰인지."""
+        return self.kind == self.BID and self.bid is not None and not self.bid.canceled
 
 
 class Preset(TimeStamped):

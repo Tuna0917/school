@@ -24,9 +24,9 @@
         <button type="submit" class="btn btn-primary">입찰</button>
     </div>
 </form>
-{% elif log %}
+{% elif my_bid %}
 <div class="alert alert-info" role="alert">
-    이 좌석에 {{ log.point }}포인트로 입찰했습니다.
+    이 좌석에 {{ my_bid.point }}포인트로 입찰했습니다.
 </div>
 {% elif not user.is_staff and object.room.is_open %}
 <div class="alert alert-secondary" role="alert">이 좌석에는 입찰할 수 없습니다.</div>
@@ -43,23 +43,26 @@
         </tr>
     </thead>
     <tbody>
-        {% if logs %}
-            {% for log in logs %}
+        {% if bids %}
+            {% for bid in bids %}
             <tr>
                 <th scope="row">{{ forloop.counter }}</th>
-                <td>{{ log.created_date }}</td>
+                <td>{{ bid.created_date }}</td>
                 <td>
                     {% if user.is_staff %}
-                    <a href="{{ log.log_student.get_absolute_url }}">{{ log.log_student }}</a>
+                    <a href="{{ bid.student.get_absolute_url }}">{{ bid.student }}</a>
                     {% else %}
-                    {{ log.log_student }}
+                    {{ bid.student }}
                     {% endif %}
                 </td>
-                <td>{{ log.point }}포인트로 입찰함.</td>
+                <td>
+                    {{ bid.point }}포인트로 입찰함.
+                    {% if bid.won %}<span class="badge text-bg-success">낙찰</span>{% endif %}
+                </td>
                 {% if object.room.is_open %}
                 <td>
-                    {% if user.is_staff or log.log_student == user.student %}
-                    <form method="POST" action="{% url 'cancel' log.id %}?next={{ request.path }}">
+                    {% if user.is_staff or bid.student == user.student %}
+                    <form method="POST" action="{% url 'cancel' bid.id %}?next={{ request.path }}">
                         {% csrf_token %}
                         <button type="submit" class="btn btn-sm btn-outline-danger">취소하기</button>
                     </form>
@@ -68,15 +71,16 @@
                 {% endif %}
             </tr>
             {% endfor %}
-        {% elif log %}
+        {% elif my_bid %}
+            {# 마감 전 학생 화면: 남의 입찰가는 감추고 본인 것만 보여준다. #}
             <tr>
                 <th scope="row">-</th>
-                <td>{{ log.created_date }}</td>
+                <td>{{ my_bid.created_date }}</td>
                 <td>나</td>
-                <td>{{ log.point }}포인트로 입찰함.</td>
+                <td>{{ my_bid.point }}포인트로 입찰함.</td>
                 {% if object.room.is_open %}
                 <td>
-                    <form method="POST" action="{% url 'cancel' log.id %}?next={{ request.path }}">
+                    <form method="POST" action="{% url 'cancel' my_bid.id %}?next={{ request.path }}">
                         {% csrf_token %}
                         <button type="submit" class="btn btn-sm btn-outline-danger">취소하기</button>
                     </form>

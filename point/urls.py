@@ -18,9 +18,10 @@ urlpatterns += [
     ),
     path("student/<int:pk>/point", views.point_change, name="point_change"),
     path("students/create", views.create_students, name="create_students"),
+    # Bid의 PK는 정수다(예전 Log는 UUID였다).
     # 예전 'cancle' 오타 경로도 유지해 기존 링크가 깨지지 않게 한다.
-    path("log/<uuid:pk>/cancel", views.cancel, name="cancel"),
-    path("log/<uuid:pk>/cancle", views.cancel, name="cancel_legacy"),
+    path("bid/<int:pk>/cancel", views.cancel, name="cancel"),
+    path("bid/<int:pk>/cancle", views.cancel, name="cancel_legacy"),
 ]
 
 # 교실 관련
