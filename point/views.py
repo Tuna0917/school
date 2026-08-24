@@ -1,326 +1,302 @@
-from django.shortcuts import render, redirect, resolve_url
-from django.urls import reverse
-from django.urls import reverse_lazy
-from .models import *
-from django.views.generic import *
-from django.views.generic import edit
-from django.http import HttpResponseRedirect, HttpResponseNotFound
 from django.contrib import messages
-# Create your views here.
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import get_object_or_404, redirect, render, resolve_url
+from django.urls import reverse
+from django.views.generic import (
+    CreateView,
+    DeleteView,
+    DetailView,
+    ListView,
+    UpdateView,
+)
+
+from . import services
+from .forms import (
+    BidForm,
+    PointChangeForm,
+    RoomCreateForm,
+    StudentBulkCreateForm,
+    StudentForm,
+)
+from .mixins import (
+    LoggedInMixin,
+    OwnerOrStaffMixin,
+    StaffRequiredMixin,
+    handle_domain_error,
+    is_staff,
+    staff_required,
+    student_of,
+    student_required,
+)
+from .models import Log, Preset, Room, Seat, Student
+
+# ---------------------------------------------------------------- 학생
 
 
-class StudentListView(ListView):
+class StudentListView(StaffRequiredMixin, ListView):
     model = Student
-    paginate_by = 8
-class StudentDetailView(DetailView):
+    paginate_by = 20
+
+    def get_queryset(self):
+        # select_related로 N+1 쿼리를 없앤다.
+        return Student.objects.select_related("user")
+
+
+class StudentDetailView(OwnerOrStaffMixin, DetailView):
     model = Student
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['logs'] = Log.objects.filter(log_student = context['object']).order_by('-created_date').all()
-        context['charges'] = Charge.objects.filter(student = context['object']).all()
-        context['presets'] = Preset.objects.all()
+        student = context["object"]
+        context["logs"] = Log.objects.filter(log_student=student).order_by(
+            "-created_date"
+        )[:100]
+        context["presets"] = Preset.objects.all()
+        context["point_form"] = PointChangeForm()
         return context
 
-class StudentUpdateView(UpdateView):
+
+class StudentUpdateView(OwnerOrStaffMixin, UpdateView):
     model = Student
-    fields = ['name', ] #학생은 'name'만 보이게 하기
+    form_class = StudentForm
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        # 상태(재학/휴학/자퇴) 변경은 선생님만.
+        kwargs["allow_status"] = is_staff(self.request.user)
+        return kwargs
 
     def get_success_url(self):
-        return reverse('student_detail',kwargs={'pk': self.object.id })
-    
-    def dispatch(self, request, *args, **kwargs):
-        # Check permissions for the request.user here
-        if request.user.is_staff:
-            self.fields = ['name','status']
-        return super().dispatch(request, *args, **kwargs)
-
-class ChargeListView(ListView):
-    modle = Charge
+        return reverse("student_detail", kwargs={"pk": self.object.id})
 
 
+@staff_required
+@handle_domain_error(lambda request, pk: resolve_url("student_detail", pk))
+def point_change(request, pk):
+    student = get_object_or_404(Student, pk=pk)
+    if request.method != "POST":
+        return redirect(student.get_absolute_url())
 
-class RoomListView(ListView):
+    form = PointChangeForm(request.POST)
+    if not form.is_valid():
+        for error in form.errors.values():
+            messages.error(request, error.as_text())
+        return redirect(student.get_absolute_url())
+
+    services.adjust_point(
+        student,
+        form.cleaned_data["point"],
+        reason=form.cleaned_data["reason"],
+        obj_name="teacher",
+    )
+    messages.success(request, f"{student.name}의 포인트를 변경했습니다.")
+    return redirect(student.get_absolute_url())
+
+
+@staff_required
+def create_students(request):
+    if request.method == "POST":
+        form = StudentBulkCreateForm(request.POST)
+        if form.is_valid():
+            created = services.create_student_accounts(form.cleaned_data["number"])
+            # 아이디를 추측해서 보여주면 안 된다. 실제 username을 그대로 넘긴다.
+            return render(
+                request,
+                "student_create_complete.html",
+                {
+                    "passwords": [
+                        (s.user.username, pw, s.get_absolute_url())
+                        for s, pw in created
+                    ]
+                },
+            )
+    else:
+        form = StudentBulkCreateForm()
+    return render(request, "student_create.html", {"form": form})
+
+
+# ---------------------------------------------------------------- 교실 / 좌석
+
+
+class RoomListView(StaffRequiredMixin, ListView):
     model = Room
 
-class RoomDetailView(DetailView): #사실상 SeatListView죠?
+
+class RoomDetailView(LoggedInMixin, DetailView):
     model = Room
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['seats'] = []
-
-        for i, seat in enumerate(context['object'].seat_set.all()):
-                if i%(context['object'].row) == 0:
-                    context['seats'].append(False)
-                context['seats'].append(seat)
-        room = context['object']
-        seats = context['object'].seat_set.all()
-        n = (room.row-seats.count()%room.row)
-        context['seats'].extend(['empty']*(n if n != room.row else 0))
+        context["rows"] = context["object"].grid()
         return context
 
-    # def get_template_names(self) -> List[str]:
-    #     return super().get_template_names()
 
-# class RoomCreateView(CreateView):
-#     model = Room
-#     fields = ['notice', 'row', 'minimum',]
-
-#     def form_valid(self, form):
-#         return super().form_valid(form)
-
-class RoomUpdateView(UpdateView):
+class RoomUpdateView(StaffRequiredMixin, UpdateView):
     model = Room
-    fields = ['notice', 'row', 'minimum',]
+    fields = ["notice", "row", "minimum"]
 
-class SeatDetailView(DetailView):
+
+class SeatDetailView(LoggedInMixin, DetailView):
     model = Seat
 
+    def get_queryset(self):
+        return Seat.objects.select_related("room", "owner")
+
     def get_context_data(self, **kwargs):
-        context= super().get_context_data(**kwargs)
-        seat = context['object']
-        context['logs'] = Log.objects.filter(obj_name='seat', obj_id=seat.id, canceled=False)
-        if not self.request.user.is_staff:
-            try:
-                context['log'] = Log.objects.get(obj_name='seat', obj_id=seat.id,canceled=False, log_student = self.request.user.student)
-            except:
-                context['log'] = None
+        context = super().get_context_data(**kwargs)
+        seat = context["object"]
+        student = student_of(self.request.user)
+        room_closed = not seat.room.is_open
+
+        if is_staff(self.request.user) or room_closed:
+            # 선생님은 항상, 학생은 마감 후에만 전체 입찰 내역을 본다.
+            context["logs"] = services.active_bids([seat.id]).select_related(
+                "log_student"
+            )
+        else:
+            context["logs"] = []
+
+        context["log"] = (
+            services.bid_of(student, seat) if student is not None else None
+        )
+        if student is not None and context["log"] is None and seat.is_biddable:
+            context["bid_form"] = BidForm(student=student, room=seat.room)
         return context
 
 
-class PresetListView(ListView):
-    model = Preset
-
-class PresetDetailView(DetailView):
-    model = Preset
-
-class PresetCreateView(CreateView):
-    model = Preset
-    fields = ['name', 'point']
-
-    def get_success_url(self) -> str:
-        return resolve_url('preset_list')
-
-class PresetUpdateView(UpdateView):
-    model = Preset
-    fields = ['name', 'point']
-
-    def get_success_url(self) -> str:
-        return resolve_url('preset_list')
-
-class PresetDeleteView(DeleteView):
-    model = Preset
-
-    def get_success_url(self) -> str:
-        return resolve_url('preset_list')
-
-
-
-
-
-def create_room(request):
-    if (not Room.objects.filter(status='a'))and request.user.is_staff: #열려있는 교실이 없고 선생님이면.
-        if request.method == 'POST':
-            room = Room.objects.create(
-                row = request.POST['row'],
-                minimum = request.POST['minimum']
-            )
-            
-            for i in range(int(request.POST['num'])):
-                Seat.objects.create(
-                    room = room,
-                    num = i+1
-                )
-
-            return redirect('room_detail', pk=Room.objects.get(status='a').id)
-        return render(request, 'room_create.html')
-    return HttpResponseNotFound('<h1>Page not found</h1>')
-
-
-def create_students(request):
-    if not request.user.is_staff:
-        return HttpResponseNotFound('<h1>Page not found</h1>')
-    if request.method == 'POST':
-        context = dict()
-        context['passwords'] = []
-        n = max(User.objects.count(),1) #1
-        import random
-        for i in range(int(request.POST['number'])): #구조상 여기서 렉걸림
-            #password = int(random.random()*100000000)
-            password = 123123
-            username = f'student{i+n}'
-            user = User.objects.create_user(
-                username,
-                email = username+'@school.com',
-                password=f'{password}',
-                first_name = 'Student',
-                last_name = 'Student'
-            )
-            student = Student.objects.create(
-                    user = user,
-                    name = username,
-                )
-            context['passwords'].append((student.id, f'{password}'))
-        return render(request, 'student_create_complete.html', context=context)
-    return render(request, 'student_create.html')
-
-
+@student_required
+@handle_domain_error(lambda request, pk: resolve_url("seat_detail", pk))
 def auction(request, pk):
-    seat = Seat.objects.get(id=pk)
-    if seat.room.status == 'u':
-        return redirect('home')
-    if request.method == 'POST':
-        student = request.user.student
-        #해당 좌석에 이미 입찰한 적이 있는가?
-        if not Log.objects.filter(obj_name='seat', obj_id = seat.id, log_student=student, canceled=False):
+    seat = get_object_or_404(Seat.objects.select_related("room"), pk=pk)
+    if request.method != "POST":
+        return redirect(seat.get_absolute_url())
 
-            post = request.POST
- 
-            student.point -= int(post['point'])
-            student.save()
+    student = student_of(request.user)
+    form = BidForm(request.POST, student=student, room=seat.room)
+    if not form.is_valid():
+        for error in form.errors.values():
+            messages.error(request, error.as_text())
+        return redirect(seat.get_absolute_url())
 
-            log = Log.objects.create(
-                status = 'u',
-                obj_name = 'seat',
-                obj_id = pk,
-                log_student = student,
-                point = int(post['point']),
-                reason = f'{seat.num}번 좌석에 입찰함.'
-            )
-    return redirect('room_now')
-
-def point_change(request, pk):
-    student = Student.objects.get(id=pk)
-    if request.user.is_staff and request.method=='POST':
-        post = request.POST
-
-        student.point += int(post['point'])
-        student.save()
-
-        log = Log.objects.create(
-            status = 't',
-            obj_name = post.get('name', 'teacher'),
-            obj_id = int(post.get('id', '0')),
-            point = int(post['point']),
-            log_student = student,
-            reason = post.get('reason', '')
-        )
-        messages.success(request, 'Profile details updated.')
-        return HttpResponseRedirect(student.get_absolute_url())
-    return HttpResponseNotFound('<h1>Page not found</h1>')
+    services.place_bid(student, seat, form.cleaned_data["point"])
+    messages.success(request, f"{seat.num}번 좌석에 입찰했습니다.")
+    return redirect("room_now")
 
 
+@login_required
+@handle_domain_error("room_now")
 def cancel(request, pk):
-    log = Log.objects.get(id=pk)
-    if request.user.is_staff or request.user.student == log.log_student:
-        if log.status == 'u' and (not log.canceled):
+    log = get_object_or_404(Log.objects.select_related("log_student"), pk=pk)
+    student = student_of(request.user)
 
-            log.canceled = True
-            log.save()
+    # 선생님이거나 본인의 입찰일 때만 취소 가능.
+    if not (is_staff(request.user) or log.log_student == student):
+        messages.error(request, "본인의 입찰만 취소할 수 있습니다.")
+        return redirect("room_now")
+    if not log.is_bid:
+        messages.error(request, "입찰 기록만 취소할 수 있습니다.")
+        return redirect("room_now")
 
-            student = log.log_student
-            student.point += log.point
-            student.save()
+    services.cancel_bid(log)
+    messages.success(request, "입찰을 취소하고 포인트를 돌려받았습니다.")
+    return redirect(request.GET.get("next") or "room_now")
 
-            Log.objects.create(
-                obj_name='log',
-                log_student = student,
-                cancel_log = log,
-                point = log.point,
+
+@staff_required
+@handle_domain_error("room_now")
+def create_room(request):
+    if services.get_open_room() is not None:
+        messages.error(request, "이미 열려 있는 교실이 있습니다. 먼저 마감해 주세요.")
+        return redirect("room_now")
+
+    if request.method == "POST":
+        form = RoomCreateForm(request.POST)
+        if form.is_valid():
+            room = services.open_room(
+                row=form.cleaned_data["row"],
+                minimum=form.cleaned_data["minimum"],
+                seat_count=form.cleaned_data["num"],
+                notice=form.cleaned_data["notice"],
             )
-    return redirect('room_now')
-
-def close_confirm(request):
-    if request.user.is_staff:
-        if Room.objects.filter(status='a'):
-            room = Room.objects.get(status='a')
-        else:
-            return HttpResponseNotFound('<h1>열려있는 교실이 없어요</h1>')
-        seats = Seat.objects.filter(room = room).values_list('id', flat=True)
-        '''
-        미달인 학생 - 입찰한 좌석 수. 
-        '''
-        context = dict()
-        context['object_list'] = [(student, Log.objects.filter(obj_name='seat',obj_id__in=seats,log_student=student, canceled=False).count())  for student in Student.objects.all()]
-        context['room'] = room
-        return render(request, 'close_confirm.html', context=context)
-    return HttpResponseNotFound('<h1>Page not found</h1>')
-
-        
-
-
-def close_room(request):
-    if not request.user.is_staff:
-        return HttpResponseNotFound('<h1>Page not found</h1>')
-    room = Room.objects.get(status='a')
-    seats = Seat.objects.filter(room = room).values_list('id', flat=True)
-    logs = Log.objects.filter(obj_name='seat',obj_id__in=seats, canceled=False).order_by('-point', 'created_date')
-    has = []
-    for log in logs:
-        seat = Seat.objects.get(id= log.obj_id)
-        student = log.log_student
-        if seat.status == 'u' or (seat in student.seat_set.all()):
-            log.canceled = True
-            log.save()
-
-            student.point += log.point
-            student.save()
-
-            Log.objects.create(
-                obj_name='log',
-                log_student = student,
-                cancel_log = log,
-                point = log.point,
-            )
-        else:
-            seat.status = 'u'
-            seat.owner = student
-            seat.save()
-            has.append(student)
-
-    import random
-    students = list(Student.objects.filter(status='a').all())
-    seats = list(Seat.objects.filter(room = room, status='a', owner__isnull=True))
-    random.shuffle(seats)
-
-    for seat in seats:
-        if students:
-            while seat.status == 'a':
-                if students:
-                    std = students.pop()
-                else:
-                    break
-                if std in has:
-                    continue
-                seat.status = 'u'
-                seat.owner = std
-                seat.save()
-        else:
-            break
-    room.status = 'u'
-    room.save()
-    return room_now(request)
-        
-
-def room_now(request):
-    if Room.objects.count():
-        context = dict()
-        context['object']= Room.objects.order_by('-created_date').first()
-        context['seats'] = []
-
-        for i, seat in enumerate(context['object'].seat_set.all()):
-                if i%(context['object'].row) == 0:
-                    context['seats'].append(False)
-                context['seats'].append(seat)
-        room = context['object']
-        seats = context['object'].seat_set.all()
-        n = (room.row-seats.count()%room.row)
-        context['seats'].extend(['empty']*(n if n != room.row else 0))
-        
-        return render(request,'point/room_detail.html',context=context)
+            messages.success(request, "새 교실을 열었습니다.")
+            return redirect("room_detail", pk=room.id)
     else:
-        if request.user.is_staff:
-            return redirect('create_room')
-        else:
-            return HttpResponseNotFound('<h1>Page not found</h1>')
+        form = RoomCreateForm()
+    return render(request, "room_create.html", {"form": form})
+
+
+@staff_required
+@handle_domain_error("room_now")
+def close_confirm(request):
+    room = services.require_open_room()
+    return render(
+        request,
+        "close_confirm.html",
+        {"object_list": services.bid_counts_by_student(room), "room": room},
+    )
+
+
+@staff_required
+@handle_domain_error("room_now")
+def close_room(request):
+    # 마감은 상태를 바꾸는 동작이므로 GET으로 실행되면 안 된다.
+    if request.method != "POST":
+        return redirect("close_confirm")
+    room = services.require_open_room()
+    services.close_room(room)
+    messages.success(request, "자리 배정을 마감했습니다.")
+    return redirect("room_detail", pk=room.id)
+
+
+@handle_domain_error("home")
+def room_now(request):
+    """가장 최근 교실 화면. 로그인한 사람만 볼 수 있다."""
+    if not request.user.is_authenticated:
+        return redirect("login")
+
+    room = Room.objects.order_by("-created_date").first()
+    if room is None:
+        if is_staff(request.user):
+            return redirect("create_room")
+        messages.info(request, "아직 열린 교실이 없습니다.")
+        return render(request, "home.html")
+
+    return render(
+        request,
+        "point/room_detail.html",
+        {"object": room, "rows": room.grid()},
+    )
+
+
+# ---------------------------------------------------------------- 프리셋 (선생님 전용)
+
+
+class PresetListView(StaffRequiredMixin, ListView):
+    model = Preset
+
+
+class PresetDetailView(StaffRequiredMixin, DetailView):
+    model = Preset
+
+
+class PresetCreateView(StaffRequiredMixin, CreateView):
+    model = Preset
+    fields = ["name", "point"]
+
+    def get_success_url(self):
+        return resolve_url("preset_list")
+
+
+class PresetUpdateView(StaffRequiredMixin, UpdateView):
+    model = Preset
+    fields = ["name", "point"]
+
+    def get_success_url(self):
+        return resolve_url("preset_list")
+
+
+class PresetDeleteView(StaffRequiredMixin, DeleteView):
+    model = Preset
+
+    def get_success_url(self):
+        return resolve_url("preset_list")

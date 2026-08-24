@@ -1,16 +1,21 @@
 {% extends 'school.html' %}
 
-{% block teacher%}
+{% block teacher %}
+<h1 class="mb-4">학생 계정 만들기</h1>
 
-<form method="POST" action="{% url 'create_students' %}">{% csrf_token %}
-    <label for="number">학생계정을 몇개 만들까요? :</label>
-    <input type="number" id="number" name="number" min="0" value="0">
-    <input type="submit">
+<form method="POST" action="{% url 'create_students' %}" style="max-width: 24rem;">
+    {% csrf_token %}
+    <div class="mb-3">
+        <label for="{{ form.number.id_for_label }}" class="form-label">{{ form.number.label }}</label>
+        {{ form.number }}
+        {% if form.number.errors %}
+        <div class="text-danger small">{{ form.number.errors.as_text }}</div>
+        {% endif %}
+    </div>
+    <button type="submit" class="btn btn-primary">만들기</button>
 </form>
 
-<br>
-<br>
-<div class="alert alert-danger" role="alert">
-    렉이 걸립니다! 버튼은 한 번만 눌러주세요! 
-  </div>
+<div class="alert alert-warning mt-4" role="alert">
+    비밀번호는 무작위로 생성되며 다음 화면에서 한 번만 표시됩니다. 버튼은 한 번만 눌러주세요.
+</div>
 {% endblock %}

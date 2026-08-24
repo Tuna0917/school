@@ -2,46 +2,48 @@
 
 {% block content %}
 
-
-    <div class="row justify-content-evenly g-4">
-        <div class="col-12">
-        <div class="card border-dark">
-            <div class="card-body text-center">
-            <h5 class="card-title font-weight-bold"> 칠판</h5>
-            <h6 class="card-subtitle mb-2 text-muted">{% if object.notice %}공지사항{% endif %}</h6>
-            <p class="card-text">{{ object.notice }}</p>
-            {% if user.is_staff %}
-            <a href="{% url 'room_update' object.id %}" class="stretched-link"></a>
-            {% endif %}
-            </div>
-        </div>
-        </div>
-
-    {% for seat in seats %}
-
-    {% if seat %}
-
-    <div class="col-1">{% if seat != 'empty' %}
-        <div class="card border-dark">
-            <div class="card-body text-center">
-            <h5 class="card-title">{{ seat.num }}</h5>
-            <h6 class="card-subtitle mb-2 text-muted"></h6>
-            {% if seat.owner %}
-            <p class="card-text">{{ seat.owner }}</p>
-            {% endif %}
-            <a href="{{ seat.get_absolute_url }}" class="stretched-link"></a>
-            </div>
-        </div>{% endif %}
+<div class="card border-dark mb-4">
+    <div class="card-body text-center">
+        <h5 class="card-title fw-bold">칠판</h5>
+        {% if object.notice %}
+        <h6 class="card-subtitle mb-2 text-muted">공지사항</h6>
+        <p class="card-text">{{ object.notice }}</p>
+        {% endif %}
+        {% if object.minimum %}
+        <p class="card-text text-muted mb-0">최소 입찰 {{ object.minimum }}포인트</p>
+        {% endif %}
+        {% if user.is_staff %}
+        <a href="{% url 'room_update' object.id %}" class="stretched-link" aria-label="교실 정보 수정"></a>
+        {% endif %}
     </div>
+</div>
 
-    {% else %}
-    <div class="w-100"></div>
-    {% endif %}
+{% if not object.is_open %}
+<div class="alert alert-secondary" role="alert">이 교실은 배정이 마감되었습니다.</div>
+{% endif %}
 
+{# rows는 뷰에서 계산하지 않고 Room.grid()가 만든 2차원 리스트다.
+   예전에는 seats 한 리스트에 False / 'empty' 센티널을 섞어 넣고 있었다. #}
+{% for row in rows %}
+<div class="d-flex justify-content-center gap-2 mb-2">
+    {% for seat in row %}
+    <div class="flex-fill" style="min-width: 0; max-width: 7rem;">
+        {% if seat %}
+        <div class="card h-100 {% if seat.owner %}border-secondary bg-light{% else %}border-dark{% endif %}">
+            <div class="card-body text-center p-2">
+                <h6 class="card-title mb-1">{{ seat.num }}</h6>
+                {% if seat.owner %}
+                <p class="card-text small text-muted mb-0">{{ seat.owner }}</p>
+                {% else %}
+                <p class="card-text small text-muted mb-0">빈자리</p>
+                {% endif %}
+                <a href="{{ seat.get_absolute_url }}" class="stretched-link" aria-label="{{ seat.num }}번 자리 보기"></a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
     {% endfor %}
-    </div>
-
-
-
+</div>
+{% endfor %}
 
 {% endblock %}

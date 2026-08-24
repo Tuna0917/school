@@ -1,4 +1,4 @@
-asgiref==3.3.4
-Django==3.2.4
-pytz==2021.1
-sqlparse==0.4.1
+# Django 3.2는 2024년 4월에 지원이 끝나 보안 패치를 받지 못한다. 5.2 LTS로 올린다.
+Django>=5.2,<6.0
+asgiref>=3.8
+sqlparse>=0.5

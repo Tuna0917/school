@@ -1,43 +1,64 @@
 {% extends 'school.html' %}
 
 {% block content %}
-<div class='py-5'>
-    <h3>{{ object.name }}</h3> 
-    {% if user.is_staff or user.student == object %}
-    <p class="lead">포인트 : {{object.point}}<br> <a href="{% url 'student_update' object.id %}">이름수정하기</a></p>
-    {% endif %}
+<div class="py-4">
+    <h3>{{ object.name }}</h3>
+    <p class="lead mb-1">포인트 : {{ object.point }}</p>
+    <a href="{% url 'student_update' object.id %}">정보 수정하기</a>
 </div>
 
 <div class="row g-5">
     {% if user.is_staff %}
     <div class="col-md-5 col-lg-4 order-md-last">
-        <h4 class="d-flex justify-content-between align-items-center mb-3">
-            <span class="text-primary">Presets</span>
-        </h4>
+        <h4 class="mb-3"><span class="text-primary">프리셋</span></h4>
+        <p class="text-muted small">프리셋을 고르면 그 점수로 지급됩니다.</p>
         <ul class="list-group mb-3">
-            {% for preset in presets %}<a href="#" style="display: block; cursor: pointer; text-decoration: none;">
-                <li class="list-group-item d-flex justify-content-between lh-sm">
-                    
-                        <div>
-                            <h6 class="my-1">{{ preset.name }}</h6>
-                        </div>
-                        <div>
-                            <h6 class="my-1">{{ preset.point }}점</h6>
-                        </div>
-                    
-                </li></a>
+            {% for preset in presets %}
+            <li class="list-group-item d-flex justify-content-between lh-sm">
+                <span>{{ preset.name }}</span>
+                <span class="text-muted">{{ preset.point }}점</span>
+            </li>
+            {% empty %}
+            <li class="list-group-item text-muted">프리셋이 없습니다.</li>
             {% endfor %}
-            
-            <a href="{% url 'preset_create' %}" class="w-100 btn btn-primary btn-lg">Create New Preset</a>
         </ul>
+        <a href="{% url 'preset_create' %}" class="w-100 btn btn-outline-primary">프리셋 만들기</a>
     </div>
     {% endif %}
-    {% if user.is_staff or user.student == object %}
+
     <div class="col-md-7 col-lg-8">
-        {% include 'point/includes/messages.html' %}
+        {% if user.is_staff %}
+        {# 폼을 표 바깥에 둔다. <form>을 <tbody> 안에 넣으면 HTML 파서가 이를
+           테이블 밖으로 끌어내면서 CSRF 토큰이 함께 빠져나가 전송이 깨진다. #}
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">포인트 지급 / 차감</h5>
+                <form method="POST" action="{% url 'point_change' object.id %}" class="row g-2 align-items-end">
+                    {% csrf_token %}
+                    <div class="col-sm-3">
+                        <label for="{{ point_form.point.id_for_label }}" class="form-label">포인트</label>
+                        {{ point_form.point }}
+                    </div>
+                    <div class="col-sm-4">
+                        <label for="{{ point_form.preset.id_for_label }}" class="form-label">프리셋</label>
+                        {{ point_form.preset }}
+                    </div>
+                    <div class="col-sm-5">
+                        <label for="{{ point_form.reason.id_for_label }}" class="form-label">이유</label>
+                        <div class="input-group">
+                            {{ point_form.reason }}
+                            <button class="btn btn-outline-secondary" type="submit">지급</button>
+                        </div>
+                    </div>
+                </form>
+                <p class="form-text mb-0">음수를 넣으면 차감됩니다. 결과가 음수가 되면 거부됩니다.</p>
+            </div>
+        </div>
+        {% endif %}
+
         <h4 class="mb-3">내역</h4>
         <div class="table-responsive">
-            <table class="table talve-sm">
+            <table class="table table-sm">
                 <thead>
                     <tr>
                         <th scope="col">#</th>
@@ -47,34 +68,19 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% if user.is_staff %}
-                    <form method="POST" action="{% url 'point_change' object.id %}">
-                        {% csrf_token %}
-                    <tr>
-                        <th scope="row">-</th>
-                        <td>Now</td>
-                        <td><input class="form-control" type="number" id="point" name="point" value="0"></td>
-                        <td> <div class="input-group mb-3">
-                            <input type="text" id="reason" name="reason" class="form-control"aria-describedby="button-addon2">
-                            <button class="btn btn-outline-secondary" type="submit" id="button-addon2">Submit</button>
-                          </div></td>
-                     </tr>
-                    </form>
-                    {% endif %}
-                    
                     {% for log in logs %}
-                    <tr>
+                    <tr {% if log.canceled %}class="text-muted text-decoration-line-through"{% endif %}>
                         <th scope="row">{{ forloop.counter }}</th>
                         <td>{{ log.created_date }}</td>
                         <td>{{ log.point }}</td>
-                        <td>{{ log.reason}}</td>
-                     </tr>
+                        <td>{{ log.reason }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4" class="text-muted">내역이 없습니다.</td></tr>
                     {% endfor %}
-                    
                 </tbody>
             </table>
         </div>
     </div>
-    {% endif %}
 </div>
 {% endblock %}

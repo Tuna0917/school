@@ -11,6 +11,8 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 """
 from pathlib import Path
 import os
+
+from django.core.exceptions import ImproperlyConfigured
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -18,13 +20,62 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
 
+def env_bool(name, default=False):
+    """'False', '0', 'no' 를 모두 거짓으로 읽는다.
+
+    예전 코드의 `bool(os.environ.get('DJANGO_DEBUG', True))` 는 빈 문자열이
+    아닌 모든 값을 True로 만들었다. 즉 DJANGO_DEBUG=False 를 넣어도 DEBUG는
+    항상 True였고, 운영 서버에서 소스코드와 환경변수가 그대로 노출됐다.
+    """
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() in ('1', 'true', 'yes', 'on')
+
+
+DEBUG = env_bool('DJANGO_DEBUG', default=True)
+
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-^gar5nb+bzwy1@4e81o2+ot4b7-%mfr-_q%7w%wuw4qcy(0uub')
+# 운영에서는 반드시 DJANGO_SECRET_KEY를 설정해야 한다. 없으면 개발 중에만
+# 쓰이는 임시 키로 떨어지고, DEBUG가 꺼져 있으면 아예 부팅을 거부한다.
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY')
+if not SECRET_KEY:
+    if not DEBUG:
+        raise ImproperlyConfigured(
+            'DJANGO_SECRET_KEY 환경변수를 설정해야 합니다. '
+            "예: python -c 'import secrets;print(secrets.token_urlsafe(50))'"
+        )
+    SECRET_KEY = 'django-insecure-development-only-do-not-use-in-production'
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = bool(os.environ.get('DJANGO_DEBUG', True))
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.environ.get(
+        'DJANGO_ALLOWED_HOSTS',
+        'localhost,127.0.0.1,harangpoint.pythonanywhere.com,tricka4.pythonanywhere.com',
+    ).split(',')
+    if host.strip()
+]
 
-ALLOWED_HOSTS = ['harangpoint.pythonanywhere.com','tricka4.pythonanywhere.com']
+CSRF_TRUSTED_ORIGINS = [
+    f'https://{host}' for host in ALLOWED_HOSTS if not host.startswith('127.')
+]
+
+# 운영(HTTPS) 환경에서만 켜지는 보안 설정. 로컬 http 개발을 막지 않는다.
+if not DEBUG:
+    SECURE_SSL_REDIRECT = env_bool('DJANGO_SECURE_SSL_REDIRECT', default=True)
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_SAMESITE = 'Lax'
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
+X_FRAME_OPTIONS = 'SAMEORIGIN'
 
 
 # Application definition
@@ -123,7 +174,9 @@ STATIC_URL = '/static/'
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = '/'
 from django.contrib.messages import constants as messages
 MESSAGE_TAGS = {
         messages.DEBUG: 'alert-secondary',

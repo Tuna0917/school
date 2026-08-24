@@ -1,14 +1,23 @@
 {% extends 'school.html' %}
 
 {% block content %}
-<form method="POST" action="{% url 'create_room' %}">{% csrf_token %}
-    <label for="num"><h1>좌석 수:</h1></label>
-    <input type="number" id="num" name="num" min="0" value="0">(한번 설정하면 다음 자리배치까지는 수정할 수 없습니다.)<br><br>
-    <label for="row">줄 수:</label>
-    <input type="number" id="row" name="row" min="0" value="0"><br><br>
-    <label for="minimum">최소 입찰 좌석 수:</label>
-    <input type="number" id="minimum" name="minimum" min="0" value="0"><br><br>
-    <input type="submit">
-</form>
+<h1 class="mb-4">새 교실 열기</h1>
 
+<form method="POST" action="{% url 'create_room' %}" style="max-width: 32rem;">
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+    <div class="alert alert-danger">{{ form.non_field_errors.as_text }}</div>
+    {% endif %}
+    {% for field in form %}
+    <div class="mb-3">
+        <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+        {{ field }}
+        {% if field.errors %}
+        <div class="text-danger small">{{ field.errors.as_text }}</div>
+        {% endif %}
+    </div>
+    {% endfor %}
+    <p class="text-muted small">한번 설정하면 다음 자리배치까지 좌석 수를 수정할 수 없습니다.</p>
+    <button type="submit" class="btn btn-primary">교실 열기</button>
+</form>
 {% endblock %}

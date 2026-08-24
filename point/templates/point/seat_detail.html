@@ -2,78 +2,99 @@
 
 {% block content %}
 
-<h1>{{object}}</h1>
-<br>
-{% if not user.is_staff %} 
-    {% if not log %}
-        {% if object.status == 'a' %}
-            {% if user.student.point > 0 %}
-            <form method="POST" action="{% url 'auction' object.id %}?next={{ request.path }}">
-                {% csrf_token %}
-                <label for="point">포인트 :</label>
-                    <input type="number" id="point" name="point" min="1"  max="{{ user.student.point }}">
-                <input type="submit" value="입찰">
-                </form>
-            {% endif %}
+<h1>{{ object }}</h1>
+{% if object.owner %}
+<p class="lead">주인: {{ object.owner }}</p>
+{% endif %}
+<hr>
 
+{# bid_form은 뷰에서 '입찰 가능한 학생'일 때만 넣어준다.
+   템플릿에서 조건을 재구성하지 않으므로 권한 판단이 한 곳에만 있다. #}
+{% if bid_form %}
+<form method="POST" action="{% url 'auction' object.id %}" class="row g-2 align-items-end mb-4" style="max-width: 24rem;">
+    {% csrf_token %}
+    <div class="col">
+        <label for="{{ bid_form.point.id_for_label }}" class="form-label">포인트</label>
+        {{ bid_form.point }}
+        {% if bid_form.point.help_text %}
+        <div class="form-text">{{ bid_form.point.help_text }}</div>
         {% endif %}
-    {% endif %}
-
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-primary">입찰</button>
+    </div>
+</form>
+{% elif log %}
+<div class="alert alert-info" role="alert">
+    이 좌석에 {{ log.point }}포인트로 입찰했습니다.
+</div>
+{% elif not user.is_staff and object.room.is_open %}
+<div class="alert alert-secondary" role="alert">이 좌석에는 입찰할 수 없습니다.</div>
 {% endif %}
 
-<table class="table {% if user.is_staff %}table-hover{% endif %}">
+<table class="table">
     <thead>
         <tr>
             <th scope="col">#</th>
-            <th scope="col">Date</th>
-            <th scope="col">Student</th>
-            <th scope="col">Detail</th>
-            {% if object.room.status == 'a' %}
-            <th scope="col">Action</th>
-            {% endif %}
+            <th scope="col">날짜</th>
+            <th scope="col">학생</th>
+            <th scope="col">내용</th>
+            {% if object.room.is_open %}<th scope="col">취소</th>{% endif %}
         </tr>
-      </thead>
-      <tbody>
-{% if user.is_staff or object.room.status == 'u' %}
-
-
-    {% for log in logs %}
-         <tr>
-            <th scope="row">{{ forloop.counter }}</th>
-            <td>{{ log.created_date }}</td>
-            {% if user.is_staff %}<td style = "cursor:pointer;" onclick='location.href="{{log.log_student.get_absolute_url}}"'>{% else %}<td>{% endif %}{{ log.log_student }}</td>
-            <td>{{ log.point }}포인트로 입찰함.</td>
-            {% if object.room.status == 'a' %}
-            <td class="table-danger"><a href="{% url 'cancel' log.id %}?next={{ request.path }}">취소하기.</a></td>
-            {% else %}
-            <td>-</td>
-            {% endif %}  
-        </tr>
-
-    {% endfor %}
-
-
-{% else %} <!--외부인 or 학생 그치만 외부인은 content블록 안쪽을 못 보니 사실상 학생만.-->
-
-    {% if log %}
-        <tr>
-            <th scope="row">-</th>
-            <td>{{ log.created_date }}</td>
-            <td> 나 </td>
-            <td>{{ log.point }}포인트로 입찰함.</td>
-            {% if object.room.status == 'a' %}
-            <td class="table-danger"><a href="{% url 'cancel' log.id %}?next={{ request.path }}">취소하기.</a></td>
-            {% else %}
-            <td>-</td>
-            {% endif %}  
-        </tr>
-    {% endif %}
-
-{% endif %}
-</tbody>
-
-
-
-
+    </thead>
+    <tbody>
+        {% if logs %}
+            {% for log in logs %}
+            <tr>
+                <th scope="row">{{ forloop.counter }}</th>
+                <td>{{ log.created_date }}</td>
+                <td>
+                    {% if user.is_staff %}
+                    <a href="{{ log.log_student.get_absolute_url }}">{{ log.log_student }}</a>
+                    {% else %}
+                    {{ log.log_student }}
+                    {% endif %}
+                </td>
+                <td>{{ log.point }}포인트로 입찰함.</td>
+                {% if object.room.is_open %}
+                <td>
+                    {% if user.is_staff or log.log_student == user.student %}
+                    <form method="POST" action="{% url 'cancel' log.id %}?next={{ request.path }}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-danger">취소하기</button>
+                    </form>
+                    {% else %}-{% endif %}
+                </td>
+                {% endif %}
+            </tr>
+            {% endfor %}
+        {% elif log %}
+            <tr>
+                <th scope="row">-</th>
+                <td>{{ log.created_date }}</td>
+                <td>나</td>
+                <td>{{ log.point }}포인트로 입찰함.</td>
+                {% if object.room.is_open %}
+                <td>
+                    <form method="POST" action="{% url 'cancel' log.id %}?next={{ request.path }}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-danger">취소하기</button>
+                    </form>
+                </td>
+                {% endif %}
+            </tr>
+        {% else %}
+            <tr>
+                <td colspan="5" class="text-muted">
+                    {% if object.room.is_open and not user.is_staff %}
+                    다른 학생의 입찰 내역은 마감 후에 공개됩니다.
+                    {% else %}
+                    입찰 내역이 없습니다.
+                    {% endif %}
+                </td>
+            </tr>
+        {% endif %}
+    </tbody>
+</table>
 
 {% endblock %}

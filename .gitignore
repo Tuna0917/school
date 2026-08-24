@@ -1,0 +1,22 @@
+# 학생 계정과 포인트가 들어 있는 실제 DB는 커밋하지 않는다.
+db.sqlite3
+db.sqlite3-journal
+
+# 비밀 값
+.env
+.env.*
+!.env.example
+
+# 파이썬
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# 정적 파일 수집 결과
+/staticfiles/
+
+# 에디터
+.DS_Store
+.idea/
+.vscode/
