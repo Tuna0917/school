@@ -8,8 +8,10 @@
 {% endif %}
 <hr>
 
-{# bid_form은 뷰에서 '입찰 가능한 학생'일 때만 넣어준다.
-   템플릿에서 조건을 재구성하지 않으므로 권한 판단이 한 곳에만 있다. #}
+{% comment %}
+bid_form은 뷰에서 '입찰 가능한 학생'일 때만 넣어준다.
+템플릿에서 조건을 재구성하지 않으므로 권한 판단이 한 곳에만 있다.
+{% endcomment %}
 {% if bid_form %}
 <form method="POST" action="{% url 'auction' object.id %}" class="row g-2 align-items-end mb-4" style="max-width: 24rem;">
     {% csrf_token %}

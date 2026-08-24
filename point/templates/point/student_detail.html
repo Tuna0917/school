@@ -28,8 +28,10 @@
 
     <div class="col-md-7 col-lg-8">
         {% if user.is_staff %}
-        {# 폼을 표 바깥에 둔다. <form>을 <tbody> 안에 넣으면 HTML 파서가 이를
-           테이블 밖으로 끌어내면서 CSRF 토큰이 함께 빠져나가 전송이 깨진다. #}
+        {% comment %}
+        폼을 표 바깥에 둔다. <form>을 <tbody> 안에 넣으면 HTML 파서가 이를
+        테이블 밖으로 끌어내면서 CSRF 토큰이 함께 빠져나가 전송이 깨진다.
+        {% endcomment %}
         <div class="card mb-4">
             <div class="card-body">
                 <h5 class="card-title">포인트 지급 / 차감</h5>
@@ -69,8 +71,10 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {# amount는 부호를 갖는다. 지급은 초록, 차감은 빨강으로 보여
-                       '20'이 받은 건지 뺀 건지 헷갈리지 않게 한다. #}
+                    {% comment %}
+                    amount는 부호를 갖는다. 지급은 초록, 차감은 빨강으로 보여
+                    '20'이 받은 건지 뺀 건지 헷갈리지 않게 한다.
+                    {% endcomment %}
                     {% for log in logs %}
                     <tr>
                         <th scope="row">{{ forloop.counter }}</th>

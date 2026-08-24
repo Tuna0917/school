@@ -190,7 +190,7 @@ class LedgerInvariantTests(TestCase):
     `Student.point`는 사실 원장 합계의 캐시다. 둘이 갈라지면 어느 쪽이 맞는지
     알 수 없게 되고, 포인트가 새는 버그를 찾을 단서도 사라진다. 예전 Log
     구조에서는 이런 검산이 불가능했다. 차감액이 양수로 저장돼 있어서 합계에
-    아무 의미가 없었기 때문이다.
+    ���무 의미가 없었기 때문이다.
     """
 
     def assertLedgerBalanced(self):
@@ -637,3 +637,94 @@ class StudentAccountCreationTests(TestCase):
         usernames = [s.user.username for s, _ in created]
         self.assertNotIn("student1", usernames)
         self.assertEqual(len(set(usernames)), 2)
+
+
+class TemplateRenderingTests(TestCase):
+    """모든 페이지가 실제로 렌더링되는지, 템플릿 문법이 새지 않는지 확인한다.
+
+    이 테스트가 없어서 실수를 사람 눈으로 잡아야 했다. Django의 `{# #}` 주석은
+    한 줄만 처리하기 때문에, 여러 줄로 쓴 주석의 둘째 줄부터는 그냥 본문
+    텍스트가 되어 학생 화면에 개발자 메모가 그대로 노출됐다.
+    """
+
+    LEAKS = ("{#", "#}", "{%", "%}", "{{", "}}")
+
+    def setUp(self):
+        self.room = services.open_room(row=2, minimum=10, seat_count=4)
+        self.seat = self.room.seat_set.first()
+        self.student = make_student("김철수", point=100)
+        services.place_bid(self.student, self.seat, 30)
+        services.adjust_point(self.student, 20, reason="숙제 보상")
+        Preset.objects.create(name="숙제", point=10)
+        self.teacher = make_teacher()
+
+    def assertRendersCleanly(self, path):
+        response = self.client.get(path)
+        self.assertEqual(response.status_code, 200, f"{path} -> {response.status_code}")
+        body = response.content.decode()
+        # assertNotIn은 실패 시 페이지 전체를 쏟아내서 정작 어디가 문제인지
+        # 안 보인다. 문제가 된 줄만 뽑아서 보여준다.
+        for token in self.LEAKS:
+            hits = [ln.strip() for ln in body.splitlines() if token in ln]
+            if hits:
+                self.fail(
+                    f"{path} 에 처리되지 않은 템플릿 문법 {token!r} 이 남아 있다:\n  "
+                    + "\n  ".join(hits[:5])
+                )
+        return body
+
+    def test_teacher_pages_render_without_leaking_template_syntax(self):
+        self.client.login(username="teacher", password=PW)
+
+        for path in (
+            reverse("home"),
+            reverse("student_list"),
+            reverse("student_detail", args=[self.student.pk]),
+            reverse("student_update", args=[self.student.pk]),
+            reverse("seat_detail", args=[self.seat.pk]),
+            reverse("room_now"),
+            reverse("room_detail", args=[self.room.pk]),
+            reverse("preset_list"),
+            reverse("preset_create"),
+            reverse("preset_detail", args=[Preset.objects.first().pk]),
+            reverse("preset_update", args=[Preset.objects.first().pk]),
+            reverse("room_list"),
+            reverse("room_update", args=[self.room.pk]),
+            reverse("create_students"),
+            reverse("close_confirm"),
+        ):
+            with self.subTest(path=path):
+                self.assertRendersCleanly(path)
+
+    def test_room_create_page_renders_when_no_room_is_open(self):
+        """교실이 열려 있으면 create_room은 room_now로 리다이렉트한다(정상
+        동작). 그래서 이 페이지만 따로, 마감된 상태에서 확인한다."""
+        services.close_room(self.room, rng=random.Random(0))
+        self.client.login(username="teacher", password=PW)
+
+        self.assertRendersCleanly(reverse("create_room"))
+
+    def test_student_pages_render_without_leaking_template_syntax(self):
+        self.client.force_login(self.student.user)
+
+        for path in (
+            reverse("home"),
+            reverse("student_detail", args=[self.student.pk]),
+            reverse("seat_detail", args=[self.seat.pk]),
+            reverse("room_now"),
+        ):
+            with self.subTest(path=path):
+                self.assertRendersCleanly(path)
+
+    def test_student_ledger_shows_signed_amounts(self):
+        """내역 표가 실제로 부호와 함께 그려지는지. 컨텍스트만 확인하면
+        템플릿이 amount를 아예 출력하지 않아도 테스트가 통과한다."""
+        self.client.force_login(self.student.user)
+
+        body = self.assertRendersCleanly(
+            reverse("student_detail", args=[self.student.pk])
+        )
+
+        self.assertIn("-30", body)  # 입찰 차감
+        self.assertIn("+20", body)  # 선생님 지급
+        self.assertIn("+100", body)  # 최초 지급

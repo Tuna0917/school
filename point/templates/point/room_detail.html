@@ -22,8 +22,10 @@
 <div class="alert alert-secondary" role="alert">이 교실은 배정이 마감되었습니다.</div>
 {% endif %}
 
-{# rows는 뷰에서 계산하지 않고 Room.grid()가 만든 2차원 리스트다.
-   예전에는 seats 한 리스트에 False / 'empty' 센티널을 섞어 넣고 있었다. #}
+{% comment %}
+rows는 뷰에서 계산하지 않고 Room.grid()가 만든 2차원 리스트다.
+예전에는 seats 한 리스트에 False / 'empty' 센티널을 섞어 넣고 있었다.
+{% endcomment %}
 {% for row in rows %}
 <div class="d-flex justify-content-center gap-2 mb-2">
     {% for seat in row %}

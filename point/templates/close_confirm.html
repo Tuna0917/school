@@ -23,8 +23,10 @@
     </tbody>
 </table>
 
-{# 마감은 상태를 바꾸는 동작이라 GET 링크가 아니라 POST 폼이어야 한다. 예전에는
-   <a href>였기 때문에 브라우저 프리페치나 크롤러가 교실을 마감시킬 수 있었다. #}
+{% comment %}
+마감은 상태를 바꾸는 동작이라 GET 링크가 아니라 POST 폼이어야 한다. 예전에는
+<a href>였기 때문에 브라우저 프리페치나 크롤러가 교실을 마감시킬 수 있었다.
+{% endcomment %}
 <form method="POST" action="{% url 'close_room' %}"
       onsubmit="return confirm('정말 마감할까요? 되돌릴 수 없습니다.');">
     {% csrf_token %}
