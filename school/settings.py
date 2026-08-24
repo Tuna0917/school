@@ -75,7 +75,8 @@ SESSION_COOKIE_SAMESITE = 'Lax'
 CSRF_COOKIE_SAMESITE = 'Lax'
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
-X_FRAME_OPTIONS = 'SAMEORIGIN'
+# 이 앱은 다른 사이트에 삽입될 이유가 없다. DENY로 클릭재킹을 차단한다.
+X_FRAME_OPTIONS = 'DENY'
 
 
 # Application definition

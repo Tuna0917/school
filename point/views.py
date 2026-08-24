@@ -2,6 +2,8 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render, resolve_url
 from django.urls import reverse
+from django.utils.http import url_has_allowed_host_and_scheme
+from django.views.decorators.http import require_POST
 from django.views.generic import (
     CreateView,
     DeleteView,
@@ -183,9 +185,29 @@ def auction(request, pk):
     return redirect("room_now")
 
 
+def _safe_next(request):
+    """`next` 파라미터를 검증한다.
+
+    검증 없이 redirect(request.POST['next'])를 하면 오픈 리다이렉트가 되어
+    피싱 사이트로 학생을 보낼 수 있다.
+    """
+    target = request.POST.get("next") or request.GET.get("next")
+    if target and url_has_allowed_host_and_scheme(
+        target, allowed_hosts={request.get_host()}, require_https=request.is_secure()
+    ):
+        return target
+    return None
+
+
 @login_required
+@require_POST
 @handle_domain_error("room_now")
 def cancel(request, pk):
+    """입찰 취소(환불).
+
+    반드시 POST여야 한다. GET을 허용하면 CSRF 토큰 없이 상태가 바뀌므로
+    `<img src="/log/.../cancel">` 한 줄로 남의 입찰을 취소시킬 수 있다.
+    """
     log = get_object_or_404(Log.objects.select_related("log_student"), pk=pk)
     student = student_of(request.user)
 
@@ -199,7 +221,7 @@ def cancel(request, pk):
 
     services.cancel_bid(log)
     messages.success(request, "입찰을 취소하고 포인트를 돌려받았습니다.")
-    return redirect(request.GET.get("next") or "room_now")
+    return redirect(_safe_next(request) or "room_now")
 
 
 @staff_required

@@ -429,6 +429,33 @@ class UnsafeMethodTests(TestCase):
         self.room.refresh_from_db()
         self.assertEqual(self.room.status, Room.CLOSED)
 
+    def test_cancel_ignores_get(self):
+        """cancel에 메서드 검사가 없어서 GET만으로 환불이 일어났다.
+        `<img src="/log/<id>/cancel">` 한 줄로 CSRF 토큰 없이 남의 입찰을
+        취소시킬 수 있었다 (브라우저가 이미지 요청에 쿠키를 함께 보낸다)."""
+        student = make_student("김철수", point=100)
+        log = services.place_bid(student, self.room.seat_set.first(), 30)
+
+        response = self.client.get(reverse("cancel", args=[log.pk]))
+
+        self.assertEqual(response.status_code, 405)
+        log.refresh_from_db()
+        student.refresh_from_db()
+        self.assertFalse(log.canceled)
+        self.assertEqual(student.point, 70)
+
+    def test_cancel_ignores_off_site_next_parameter(self):
+        """`redirect(request.GET['next'])`를 검증 없이 쓰면 오픈 리다이렉트가
+        된다. 신뢰된 학교 도메인 링크가 피싱 사이트로 학생을 보낼 수 있다."""
+        student = make_student("이영희", point=100)
+        log = services.place_bid(student, self.room.seat_set.first(), 30)
+
+        response = self.client.post(
+            reverse("cancel", args=[log.pk]) + "?next=https://evil.example.com/steal"
+        )
+
+        self.assertNotIn("evil.example.com", response["Location"])
+
 
 class StudentAccountCreationTests(TestCase):
     def test_created_students_get_distinct_random_passwords(self):
